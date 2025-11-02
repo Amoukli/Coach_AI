@@ -15,7 +15,7 @@ const Header: React.FC = () => {
           {/* Logo and Brand */}
           <Link to="/dashboard" className="flex items-center space-x-3">
             <img
-              src="/images/coach-logo.svg"
+              src="/images/coach-logo.svg?v=2"
               alt="Coach AI"
               className="h-10 w-auto"
             />
