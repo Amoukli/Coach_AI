@@ -14,13 +14,11 @@ const Header: React.FC = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo and Brand */}
           <Link to="/dashboard" className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-primary-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">C</span>
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-secondary-900">Coach AI</h1>
-              <p className="text-xs text-secondary-600">Clinical Training Platform</p>
-            </div>
+            <img
+              src="/images/coach-logo.svg"
+              alt="Coach AI"
+              className="h-10 w-auto"
+            />
           </Link>
 
           {/* Navigation */}
