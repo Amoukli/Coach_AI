@@ -1,0 +1,32 @@
+<svg width="400" height="200" viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Medical heartbeat/ECG style line integrated with text -->
+  <defs>
+    <linearGradient id="coachGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:rgb(16, 185, 129);stop-opacity:1" />
+      <stop offset="100%" style="stop-color:rgb(5, 150, 105);stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- ECG-style heartbeat line -->
+  <path d="M 50 100 L 100 100 L 120 70 L 140 130 L 160 60 L 180 100 L 350 100"
+        stroke="url(#coachGradient)"
+        stroke-width="3"
+        fill="none"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <!-- Small pulse dot at the end -->
+  <circle cx="350" cy="100" r="5" fill="rgb(16, 185, 129)">
+    <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Text: COACH -->
+  <text x="50" y="150" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="rgb(31, 41, 55)">
+    COACH
+  </text>
+
+  <!-- Subtitle -->
+  <text x="50" y="175" font-family="Arial, sans-serif" font-size="16" fill="rgb(107, 114, 128)">
+    Clinical Training Platform
+  </text>
+</svg>

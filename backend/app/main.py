@@ -1,9 +1,12 @@
 """Main FastAPI application"""
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 import logging
+from pathlib import Path
 
 from app.core.config import settings
 from app.core.database import init_db
@@ -32,6 +35,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Setup templates directory
+BASE_DIR = Path(__file__).resolve().parent.parent
+templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
+# Mount static files directory (for logo and assets)
+try:
+    static_dir = BASE_DIR / "static"
+    if static_dir.exists():
+        app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+except Exception as e:
+    logger.warning(f"Static directory not found: {e}")
 
 
 @app.on_event("startup")
@@ -77,10 +92,17 @@ async def api_health_check():
     }
 
 
-# Root endpoint
-@app.get("/")
-async def root():
-    """Root endpoint"""
+# Root endpoint - Landing page
+@app.get("/", include_in_schema=False)
+async def landing_page(request: Request):
+    """Serve the landing page"""
+    return templates.TemplateResponse("landing.html", {"request": request})
+
+
+# API info endpoint
+@app.get("/api/info")
+async def api_info():
+    """API information endpoint"""
     return {
         "message": "Welcome to Coach AI - Clinical Training Platform",
         "version": settings.VERSION,

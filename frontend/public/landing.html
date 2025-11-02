@@ -38,7 +38,7 @@
     </script>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="/static/images/coach-logo.svg">
+    <link rel="icon" type="image/svg+xml" href="/images/coach-logo.svg">
 
     <!-- Google Fonts - Schibsted Grotesk (with CSP compliance) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -268,12 +268,11 @@
             flex-direction: column;
             justify-content: center;
             padding: 20px 24px;
-            background: var(--bg);
+            background: transparent;
             border-radius: 12px;
             min-width: 280px;
             max-width: 320px;
             flex-shrink: 0;
-            box-shadow: var(--shadow-sm);
             transition: all 0.3s ease;
             text-align: center;
         }
@@ -299,7 +298,6 @@
 
         .scrolling-feature:hover {
             transform: translateY(-3px);
-            box-shadow: var(--shadow-lg);
         }
 
         .scrolling-feature:hover h4 {
@@ -386,7 +384,7 @@
 <body>
     <!-- Header -->
     <header class="header">
-        <button class="control-btn" onclick="window.location.href='http://localhost'">
+        <button class="control-btn" onclick="window.location.href='/app'">
             <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M16,17V14H9V10H16V7L21,12L16,17M14,2C14.5,2 15,2.2 15.4,2.6C15.8,3 16,3.5 16,4V6H14V4H5V20H14V18H16V20C16,20.5 15.8,21 15.4,21.4C15,21.8 14.5,22 14,22H5C4.5,22 4,21.8 3.6,21.4C3.2,21 3,20.5 3,20V4C3,3.5 3.2,3 3.6,2.6C4,2.2 4.5,2 5,2H14Z"/>
             </svg>
@@ -398,7 +396,7 @@
     <main class="main">
         <div class="hero">
             <div class="logo-center">
-                <img src="/static/images/coach-logo.svg" alt="Coach" class="coach-logo">
+                <img src="/images/coach-logo.svg" alt="Coach" class="coach-logo">
             </div>
             <h1>Clinical Training Platform</h1>
             <p class="hero-description">

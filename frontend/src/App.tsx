@@ -13,7 +13,7 @@ import AssessmentResults from './components/Assessment/AssessmentResults'
 
 function App() {
   return (
-    <Router>
+    <Router basename="/app">
       <div className="min-h-screen flex flex-col bg-secondary-50">
         <Header />
 
