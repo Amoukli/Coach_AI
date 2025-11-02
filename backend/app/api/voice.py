@@ -1,7 +1,7 @@
 """Voice generation API endpoints"""
 
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel
 
@@ -22,6 +22,10 @@ class VoiceProfileRequest(BaseModel):
     accent: str = "British"
     gender: str = "male"
     emotional_state: str = "neutral"
+
+
+class SpeechRecognitionResponse(BaseModel):
+    text: str
 
 
 @router.post("/synthesize")
@@ -109,3 +113,41 @@ async def list_available_voices():
             "female": ["en-US-JennyNeural", "en-US-AriaNeural"]
         }
     }
+
+
+@router.post("/recognize", response_model=SpeechRecognitionResponse)
+async def recognize_speech(
+    audio_file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Convert speech audio to text using Azure Speech Services
+
+    Args:
+        audio_file: Audio file (WAV format)
+
+    Returns:
+        Recognized text
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    try:
+        # Read audio data
+        audio_data = await audio_file.read()
+
+        logger.info(f"Received audio file: {audio_file.filename}, size: {len(audio_data)} bytes, content_type: {audio_file.content_type}")
+
+        # Recognize speech
+        text = await azure_speech_service.recognize_speech(audio_data)
+
+        logger.info(f"Speech recognized successfully: '{text}'")
+
+        return SpeechRecognitionResponse(text=text)
+
+    except Exception as e:
+        logger.error(f"Speech recognition error: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Speech recognition failed: {str(e)}"
+        )

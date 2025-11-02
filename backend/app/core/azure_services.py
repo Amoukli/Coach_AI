@@ -2,22 +2,19 @@
 
 import asyncio
 from typing import Optional, Dict, Any, List
-import azure.cognitiveservices.speech as speechsdk
+import httpx
 from openai import AzureOpenAI
 
 from app.core.config import settings
 
 
 class AzureSpeechService:
-    """Azure Speech Services for text-to-speech"""
+    """Azure Speech Services for text-to-speech using REST API"""
 
     def __init__(self):
-        self.speech_config = speechsdk.SpeechConfig(
-            subscription=settings.AZURE_SPEECH_KEY,
-            region=settings.AZURE_SPEECH_REGION
-        )
-        # Default to British English voice
-        self.speech_config.speech_synthesis_voice_name = "en-GB-RyanNeural"
+        self.subscription_key = settings.AZURE_SPEECH_KEY
+        self.region = settings.AZURE_SPEECH_REGION
+        self.base_url = f"https://{self.region}.tts.speech.microsoft.com"
 
     def get_voice_for_profile(self, voice_profile: Dict[str, str]) -> str:
         """
@@ -53,7 +50,7 @@ class AzureSpeechService:
         emotional_style: str = "neutral"
     ) -> bytes:
         """
-        Convert text to speech audio
+        Convert text to speech audio using REST API
 
         Args:
             text: Text to synthesize
@@ -63,33 +60,29 @@ class AzureSpeechService:
         Returns:
             Audio data as bytes (WAV format)
         """
-        if voice_name:
-            self.speech_config.speech_synthesis_voice_name = voice_name
-
-        # Configure audio output to in-memory stream (None means audio data is returned)
-        synthesizer = speechsdk.SpeechSynthesizer(
-            speech_config=self.speech_config,
-            audio_config=None
-        )
+        if not voice_name:
+            voice_name = "en-GB-RyanNeural"
 
         # Build SSML with emotional style if supported
-        ssml = self._build_ssml(text, voice_name or self.speech_config.speech_synthesis_voice_name, emotional_style)
+        ssml = self._build_ssml(text, voice_name, emotional_style)
 
-        # Run synthesis in executor to avoid blocking
-        loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(
-            None,
-            synthesizer.speak_ssml,
-            ssml
-        )
+        # Make REST API call
+        url = f"{self.base_url}/cognitiveservices/v1"
+        headers = {
+            "Ocp-Apim-Subscription-Key": self.subscription_key,
+            "Content-Type": "application/ssml+xml",
+            "X-Microsoft-OutputFormat": "riff-24khz-16bit-mono-pcm",
+            "User-Agent": "CoachAI"
+        }
 
-        if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
-            return result.audio_data
-        elif result.reason == speechsdk.ResultReason.Canceled:
-            cancellation = result.cancellation_details
-            raise Exception(f"Speech synthesis canceled: {cancellation.reason}")
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(url, headers=headers, content=ssml)
 
-        raise Exception("Speech synthesis failed")
+            if response.status_code == 200:
+                return response.content
+            else:
+                error_msg = f"Speech synthesis failed with status {response.status_code}: {response.text}"
+                raise Exception(error_msg)
 
     def _build_ssml(self, text: str, voice_name: str, emotional_style: str) -> str:
         """Build SSML markup for speech synthesis"""
@@ -104,18 +97,93 @@ class AzureSpeechService:
 
         style = style_map.get(emotional_style, "general")
 
-        ssml = f"""
-        <speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis"
-               xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="en-GB">
-            <voice name="{voice_name}">
-                <mstts:express-as style="{style}">
-                    {text}
-                </mstts:express-as>
-            </voice>
-        </speak>
-        """
+        ssml = f"""<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="en-GB">
+    <voice name="{voice_name}">
+        <mstts:express-as style="{style}">
+            {text}
+        </mstts:express-as>
+    </voice>
+</speak>"""
 
-        return ssml.strip()
+        return ssml
+
+    async def recognize_speech(self, audio_data: bytes) -> str:
+        """
+        Convert speech audio to text using REST API
+
+        Args:
+            audio_data: Audio data (will be auto-detected and converted if needed)
+
+        Returns:
+            Transcribed text
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+
+        # Default to simple audio format that Azure accepts better
+        # Use simple format parameter instead of complex content-type
+        content_type = "audio/wav"
+
+        # Check for WebM format (common in Chrome) - header starts with 0x1A45DFA3
+        if len(audio_data) >= 4 and audio_data[:4] == b'\x1a\x45\xdf\xa3':
+            content_type = "audio/webm; codec=opus"
+            logger.info("Detected WebM audio format")
+        # Check for OGG format - header starts with "OggS"
+        elif len(audio_data) >= 4 and audio_data[:4] == b'OggS':
+            content_type = "audio/ogg; codec=opus"
+            logger.info("Detected OGG audio format")
+        # Check for WAV format - header starts with "RIFF"
+        elif len(audio_data) >= 4 and audio_data[:4] == b'RIFF':
+            content_type = "audio/wav"
+            logger.info("Detected WAV audio format")
+        else:
+            # Unknown format - try as WebM since Chrome MediaRecorder often produces non-standard headers
+            content_type = "audio/webm; codec=opus"
+            logger.warning(f"Unknown audio format (header: {audio_data[:8].hex()}), trying as WebM")
+
+        url = f"https://{self.region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1"
+
+        headers = {
+            "Ocp-Apim-Subscription-Key": self.subscription_key,
+            "Content-Type": content_type,
+            "Accept": "application/json"
+        }
+
+        params = {
+            "language": "en-GB",
+            "format": "detailed"
+        }
+
+        logger.info(f"Sending {len(audio_data)} bytes to Azure Speech API")
+        logger.info(f"Content-Type: {content_type}")
+        logger.info(f"First 16 bytes: {audio_data[:16].hex()}")
+
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(url, headers=headers, params=params, content=audio_data)
+
+            logger.info(f"Azure Speech API response status: {response.status_code}")
+            logger.info(f"Azure Speech API response body: {response.text}")
+
+            if response.status_code == 200:
+                result = response.json()
+                recognition_status = result.get("RecognitionStatus", "Unknown")
+
+                if recognition_status == "Success":
+                    recognized_text = result.get("DisplayText", "")
+                    if recognized_text:
+                        logger.info(f"Successfully recognized: '{recognized_text}'")
+                        return recognized_text
+                    else:
+                        logger.warning("Recognition succeeded but DisplayText is empty - possible silence or unclear audio")
+                        return ""
+                else:
+                    logger.error(f"Recognition failed with status: {recognition_status}, full response: {result}")
+                    # Return empty string instead of raising exception for NoMatch/InitialSilenceTimeout
+                    return ""
+            else:
+                error_msg = f"Speech recognition API returned status {response.status_code}: {response.text}"
+                logger.error(error_msg)
+                raise Exception(error_msg)
 
 
 class AzureOpenAIService:

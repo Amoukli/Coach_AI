@@ -34,14 +34,17 @@ class SessionResponse(BaseModel):
     scenario_id: int
     student_id: int
     status: SessionStatus
-    started_at: str
-    completed_at: Optional[str]
+    started_at: datetime
+    completed_at: Optional[datetime]
     duration: Optional[int]
     current_node_id: Optional[str]
     transcript: List[dict]
 
     class Config:
         from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
 
 
 class SessionListItem(BaseModel):
@@ -50,11 +53,14 @@ class SessionListItem(BaseModel):
     session_id: str
     scenario_id: int
     status: SessionStatus
-    started_at: str
+    started_at: datetime
     duration: Optional[int]
 
     class Config:
         from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
 
 
 @router.post("/", response_model=SessionResponse, status_code=status.HTTP_201_CREATED)

@@ -89,10 +89,40 @@ class AudioService {
    */
   async startRecording(): Promise<void> {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          sampleRate: 16000,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        }
+      })
 
-      this.mediaRecorder = new MediaRecorder(stream)
+      // Try different MIME types in order of preference
+      const mimeTypes = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+        'audio/ogg',
+        'audio/wav',
+        ''
+      ]
+
+      let selectedMimeType = ''
+      for (const mimeType of mimeTypes) {
+        if (mimeType === '' || MediaRecorder.isTypeSupported(mimeType)) {
+          selectedMimeType = mimeType
+          console.log(`Using MIME type: ${mimeType || 'default'}`)
+          break
+        }
+      }
+
+      const options = selectedMimeType ? { mimeType: selectedMimeType } : {}
+      this.mediaRecorder = new MediaRecorder(stream, options)
       this.audioChunks = []
+
+      console.log(`MediaRecorder created with MIME type: ${this.mediaRecorder.mimeType}`)
 
       this.mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -118,8 +148,12 @@ class AudioService {
       }
 
       this.mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' })
+        // Use the actual MIME type from the recorder instead of hardcoding
+        const mimeType = this.mediaRecorder?.mimeType || 'audio/webm'
+        const audioBlob = new Blob(this.audioChunks, { type: mimeType })
         this.audioChunks = []
+
+        console.log(`Created blob with type: ${mimeType}, size: ${audioBlob.size}`)
 
         // Stop all tracks
         if (this.mediaRecorder && this.mediaRecorder.stream) {

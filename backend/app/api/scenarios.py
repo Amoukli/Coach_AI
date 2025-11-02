@@ -66,8 +66,8 @@ class ScenarioListItem(BaseModel):
 @router.get("/", response_model=List[ScenarioListItem])
 async def list_scenarios(
     specialty: Optional[str] = Query(None),
-    difficulty: Optional[DifficultyLevel] = Query(None),
-    status: Optional[ScenarioStatus] = Query(None, description="Filter by status"),
+    difficulty: Optional[str] = Query(None),
+    status: Optional[str] = Query(None, description="Filter by status"),
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db)
@@ -84,12 +84,25 @@ async def list_scenarios(
     """
     query = db.query(Scenario)
 
+    # Convert empty strings to None and validate
+    specialty = specialty if specialty and specialty.strip() else None
+    difficulty = difficulty if difficulty and difficulty.strip() else None
+    status = status if status and status.strip() else None
+
     if specialty:
         query = query.filter(Scenario.specialty == specialty)
     if difficulty:
-        query = query.filter(Scenario.difficulty == difficulty)
+        try:
+            difficulty_enum = DifficultyLevel(difficulty)
+            query = query.filter(Scenario.difficulty == difficulty_enum)
+        except ValueError:
+            pass  # Invalid difficulty, ignore filter
     if status:
-        query = query.filter(Scenario.status == status)
+        try:
+            status_enum = ScenarioStatus(status)
+            query = query.filter(Scenario.status == status_enum)
+        except ValueError:
+            pass  # Invalid status, ignore filter
     else:
         # By default, only show published scenarios
         query = query.filter(Scenario.status == ScenarioStatus.PUBLISHED)
