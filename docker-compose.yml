@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: coach-postgres
+    environment:
+      POSTGRES_USER: coach_user
+      POSTGRES_PASSWORD: coach_password
+      POSTGRES_DB: coach_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coach_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: coach-backend
+    environment:
+      DATABASE_URL: postgresql://coach_user:coach_password@postgres:5432/coach_db
+      DATABASE_URL_ASYNC: postgresql+asyncpg://coach_user:coach_password@postgres:5432/coach_db
+      AZURE_SPEECH_KEY: ${AZURE_SPEECH_KEY}
+      AZURE_SPEECH_REGION: ${AZURE_SPEECH_REGION}
+      AZURE_OPENAI_KEY: ${AZURE_OPENAI_KEY}
+      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT}
+      AZURE_OPENAI_DEPLOYMENT_NAME: ${AZURE_OPENAI_DEPLOYMENT_NAME}
+      CLARE_API_URL: ${CLARE_API_URL:-https://www.clareai.app/api}
+      CLARE_API_KEY: ${CLARE_API_KEY}
+      CLARK_API_URL: ${CLARK_API_URL:-https://www.clarkai.app/api}
+      CLARK_API_KEY: ${CLARK_API_KEY}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-development-secret-key-change-in-production}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DEBUG: ${DEBUG:-True}
+      CORS_ORIGINS: '["http://localhost:3000","http://localhost:80","http://localhost"]'
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend/app:/app/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: coach-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: http://localhost:8000
+      VITE_WS_URL: ws://localhost:8000
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  default:
+    name: coach-network
