@@ -9,7 +9,7 @@ const Header: React.FC = () => {
   }
 
   return (
-    <header className="bg-white shadow-soft border-b border-secondary-200">
+    <header className="bg-white shadow-soft border-b border-border">
       <div className="container-app">
         <div className="flex items-center justify-between h-16">
           {/* Logo and Brand */}

@@ -2,13 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import Inter font from Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+/* Import Schibsted Grotesk font from Google Fonts (matching landing page) */
+@import url('https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap');
 
-/* Global styles matching Clare and Clark */
+/* Global styles matching Coach landing page */
 @layer base {
   * {
-    @apply border-secondary-200;
+    @apply border-border;
   }
 
   body {
@@ -74,7 +74,7 @@
   }
 
   .card-header {
-    @apply border-b border-secondary-200 pb-4 mb-4;
+    @apply border-b border-border pb-4 mb-4;
   }
 
   /* Input styles */
