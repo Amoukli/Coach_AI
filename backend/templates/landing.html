@@ -181,12 +181,13 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
         }
 
         .coach-logo {
-            height: 120px;
+            height: 80px;
             width: auto;
+            max-width: 90%;
         }
 
         .hero h1 {
@@ -209,7 +210,7 @@
 
         /* Features Section */
         .features {
-            background: var(--bg-primary);
+            background: transparent;
             padding: 2rem 2rem;
             position: relative;
         }
@@ -364,6 +365,10 @@
 
         /* Responsive Design */
         @media (max-width: 768px) {
+            .coach-logo {
+                height: 60px;
+            }
+
             .hero h1 {
                 font-size: 1.5rem;
             }
