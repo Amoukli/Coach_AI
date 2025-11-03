@@ -6,12 +6,17 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import uuid
+import logging
 
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.session import Session as SessionModel, SessionStatus
 from app.models.scenario import Scenario
 from app.models.student import Student
+from app.models.assessment import Assessment
+from app.services.assessment_engine import AssessmentEngine
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -196,7 +201,7 @@ async def complete_session(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Mark session as completed
+    Mark session as completed and generate assessment
 
     Args:
         session_id: Session ID
@@ -215,6 +220,14 @@ async def complete_session(
     # Calculate duration
     duration = int((datetime.utcnow() - session.started_at).total_seconds())
 
+    # Get scenario for assessment
+    scenario = db.query(Scenario).filter(Scenario.id == session.scenario_id).first()
+    if not scenario:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Scenario {session.scenario_id} not found"
+        )
+
     # Update session
     session.status = SessionStatus.COMPLETED
     session.completed_at = datetime.utcnow()
@@ -222,19 +235,86 @@ async def complete_session(
     session.diagnosis_submitted = diagnosis
 
     # Check if diagnosis is correct
-    scenario = db.query(Scenario).filter(Scenario.id == session.scenario_id).first()
-    if scenario and diagnosis:
+    if diagnosis:
         session.diagnosis_correct = (
             diagnosis.lower().strip() == scenario.correct_diagnosis.lower().strip()
         )
 
     db.commit()
 
-    return {
-        "status": "success",
-        "message": "Session completed",
-        "duration": duration
-    }
+    # Generate assessment automatically
+    try:
+        logger.info(f"Generating assessment for session {session_id}")
+
+        # Prepare scenario data for assessment engine
+        scenario_data = {
+            "assessment_rubric": scenario.assessment_rubric or {},
+            "correct_diagnosis": scenario.correct_diagnosis,
+            "title": scenario.title
+        }
+
+        # Prepare session data for assessment engine
+        # Calculate relevant questions (for now, assume 80% are relevant if topics were covered)
+        relevant_questions = session.relevant_questions or int(session.questions_asked * 0.8)
+        relevance_percentage = (relevant_questions / session.questions_asked * 100) if session.questions_asked > 0 else 50
+
+        session_data = {
+            "questions_asked": session.questions_asked or 0,
+            "relevant_questions": relevant_questions,
+            "relevance_percentage": relevance_percentage,
+            "topics_covered": session.topics_covered or [],
+            "red_flags_caught": session.red_flags_identified or [],
+            "diagnosis_correct": session.diagnosis_correct or False,
+            "duration": duration
+        }
+
+        # Run assessment engine
+        assessment_engine = AssessmentEngine(scenario_data, session_data)
+        assessment_result = assessment_engine.calculate_assessment()
+
+        # Create assessment record
+        assessment_id = f"assessment_{uuid.uuid4().hex[:12]}"
+        assessment = Assessment(
+            assessment_id=assessment_id,
+            student_id=session.student_id,
+            session_id=session.session_id,
+            overall_score=assessment_result["overall_score"],
+            history_taking_score=assessment_result["history_taking_score"],
+            clinical_reasoning_score=assessment_result["clinical_reasoning_score"],
+            management_score=assessment_result["management_score"],
+            communication_score=assessment_result["communication_score"],
+            efficiency_score=assessment_result["efficiency_score"],
+            metrics=assessment_result["metrics"],
+            skills_breakdown=assessment_result["skills_breakdown"],
+            feedback_summary=assessment_result["feedback_summary"],
+            strengths=assessment_result["strengths"],
+            areas_for_improvement=assessment_result["areas_for_improvement"],
+            recommendations=[]  # Can be enhanced later
+        )
+
+        db.add(assessment)
+        db.commit()
+        db.refresh(assessment)
+
+        logger.info(f"Assessment {assessment_id} created for session {session_id} with score {assessment_result['overall_score']}")
+
+        return {
+            "status": "success",
+            "message": "Session completed and assessment generated",
+            "duration": duration,
+            "assessment_id": assessment_id,
+            "overall_score": assessment_result["overall_score"]
+        }
+
+    except Exception as e:
+        logger.error(f"Error generating assessment for session {session_id}: {str(e)}")
+        # Don't fail the completion if assessment fails
+        return {
+            "status": "success",
+            "message": "Session completed (assessment generation failed)",
+            "duration": duration,
+            "error": str(e)
+        }
 
 
 @router.delete("/{session_id}", status_code=status.HTTP_204_NO_CONTENT)

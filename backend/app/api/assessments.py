@@ -49,10 +49,13 @@ class AssessmentResponse(BaseModel):
     strengths: List[str]
     areas_for_improvement: List[str]
     recommendations: List[str]
-    created_at: str
+    created_at: datetime
 
     class Config:
         from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
 
 
 class SkillProgressResponse(BaseModel):
