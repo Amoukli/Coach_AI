@@ -73,7 +73,7 @@ const ScenarioPlayer: React.FC = () => {
     }
   }
 
-  const handleWebSocketMessage = (data: any) => {
+  const handleWebSocketMessage = async (data: any) => {
     if (data.type === 'patient_response') {
       const newMessage: Message = {
         role: 'patient',
@@ -84,10 +84,26 @@ const ScenarioPlayer: React.FC = () => {
 
       setMessages((prev) => [...prev, newMessage])
 
-      // Play audio if available
-      if (data.audio_url) {
+      // Play audio if available (base64 encoded)
+      if (data.audio_base64) {
+        try {
+          // Convert base64 to Blob
+          const audioData = atob(data.audio_base64)
+          const audioArray = new Uint8Array(audioData.length)
+          for (let i = 0; i < audioData.length; i++) {
+            audioArray[i] = audioData.charCodeAt(i)
+          }
+          const audioBlob = new Blob([audioArray], { type: 'audio/wav' })
+          await audioService.playAudioBlob(audioBlob)
+        } catch (error) {
+          console.error('Error playing audio:', error)
+        }
+      } else if (data.audio_url) {
+        // Fallback to URL-based audio
         audioService.playAudioUrl(data.audio_url)
       }
+    } else if (data.type === 'error') {
+      console.error('WebSocket error:', data.message)
     }
   }
 
