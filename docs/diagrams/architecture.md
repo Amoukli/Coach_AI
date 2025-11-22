@@ -24,9 +24,9 @@ flowchart TB
         AssessmentEngine[Assessment Engine]
     end
 
-    subgraph Services["External Services"]
+    subgraph Services["Azure Services (REST API)"]
         AzureOpenAI[Azure OpenAI\ngpt-4o]
-        AzureSpeech[Azure Speech\nServices]
+        AzureSpeech[Azure Speech REST API\nTTS + STT via httpx]
     end
 
     subgraph Database["Database"]
@@ -40,6 +40,8 @@ flowchart TB
 
     Frontend --> API
     Player <--> WS
+    WS --> ScenarioEngine
+    WS --> AzureSpeech
     API --> ScenarioEngine
     API --> AssessmentEngine
     ScenarioEngine --> AzureOpenAI
@@ -186,5 +188,10 @@ flowchart TB
 | Frontend | React 18, TypeScript, Vite, Tailwind CSS |
 | Backend | FastAPI, Python 3.11, SQLAlchemy 2.0 |
 | Database | PostgreSQL 15 |
-| AI | Azure OpenAI (gpt-4o), Azure Speech Services |
-| Infrastructure | Docker, Azure App Service, GitHub Actions |
+| AI | Azure OpenAI (gpt-4o), Azure Speech REST API (TTS/STT via httpx) |
+| Infrastructure | Docker (ARM64/AMD64), Azure App Service, GitHub Actions |
+
+## Key Architecture Notes
+
+- **Azure Speech Services**: Uses REST API directly via httpx instead of the azure-cognitiveservices-speech SDK. This provides cross-platform compatibility (ARM64/AMD64) and works reliably in Docker containers.
+- **WebSocket Integration**: The WebSocket endpoint loads scenarios from the database, creates a ScenarioEngine instance, and generates patient responses via Azure OpenAI. TTS audio is sent as base64-encoded data over the WebSocket connection.

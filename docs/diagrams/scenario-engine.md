@@ -13,33 +13,35 @@ sequenceDiagram
     participant S as Student
     participant FE as Frontend
     participant WS as WebSocket
+    participant DB as PostgreSQL
     participant SE as ScenarioEngine
     participant AI as Azure OpenAI
-    participant Voice as Speech Service
+    participant Voice as Azure Speech REST API
 
     S->>FE: Start Scenario
-    FE->>WS: Connect WebSocket
-    WS->>SE: Initialize Session
-    SE->>SE: Load Dialogue Tree
+    FE->>WS: Connect WebSocket (session_id)
+    WS->>DB: Load Session + Scenario
+    DB-->>WS: Scenario Data (patient_profile, dialogue_tree)
+    WS->>SE: Create ScenarioEngine(scenario_data)
 
     loop Consultation
-        S->>FE: Ask Question
-        FE->>WS: Send Message
-        WS->>SE: Process Question
-        SE->>SE: Analyze Question
-        SE->>AI: Generate Response
-        AI-->>SE: Patient Response
-        SE->>Voice: Synthesize Speech
-        Voice-->>SE: Audio Data
-        SE-->>WS: Response + Audio
-        WS-->>FE: Display Response
+        S->>FE: Ask Question (text or voice)
+        FE->>WS: Send {type: student_message, message: ...}
+        WS->>SE: process_student_input(message)
+        SE->>SE: Analyze Question + Track Topics
+        SE->>AI: generate_patient_response()
+        AI-->>SE: Patient Response Text
+        SE-->>WS: Response + Metadata
+        WS->>Voice: POST SSML to TTS endpoint
+        Voice-->>WS: WAV Audio Bytes
+        WS->>WS: Base64 Encode Audio
+        WS-->>FE: JSON {message, audio_base64, metadata}
         FE-->>S: Show Response + Play Audio
     end
 
     S->>FE: Complete Scenario
-    FE->>SE: End Session
-    SE->>SE: Calculate Metrics
-    SE-->>FE: Session Summary
+    FE->>WS: Disconnect
+    WS->>WS: Cleanup ScenarioEngine
 ```
 
 ## Dialogue Tree Processing
@@ -66,15 +68,18 @@ flowchart TD
     AI --> Response[Patient Response]
     Response --> Emotion{Emotional State}
 
-    Emotion -->|Anxious| AnxiousVoice[Anxious Voice Style]
-    Emotion -->|Calm| CalmVoice[Calm Voice Style]
-    Emotion -->|Distressed| DistressedVoice[Distressed Voice Style]
+    Emotion -->|Anxious| AnxiousVoice[style: worried]
+    Emotion -->|Calm| CalmVoice[style: calm]
+    Emotion -->|Distressed| DistressedVoice[style: sad]
 
-    AnxiousVoice --> Speech[Azure Speech Synthesis]
-    CalmVoice --> Speech
-    DistressedVoice --> Speech
+    AnxiousVoice --> SSML[Build SSML with mstts:express-as]
+    CalmVoice --> SSML
+    DistressedVoice --> SSML
 
-    Speech --> Output([Response + Audio])
+    SSML --> Speech[Azure Speech REST API\nPOST via httpx]
+    Speech --> Audio[WAV Audio Bytes]
+    Audio --> Base64[Base64 Encode]
+    Base64 --> Output([Response + Audio via WebSocket])
 ```
 
 ## Question Analysis

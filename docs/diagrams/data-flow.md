@@ -51,33 +51,35 @@ flowchart TD
 sequenceDiagram
     participant Client as Browser
     participant WS as WebSocket
-    participant Redis as Message Queue
+    participant DB as PostgreSQL
     participant Engine as ScenarioEngine
     participant AI as Azure OpenAI
-    participant DB as PostgreSQL
+    participant Speech as Azure Speech REST API
 
     Client->>WS: Connect (session_id)
-    WS->>DB: Load Session State
-    DB-->>WS: Session + Transcript
+    WS->>DB: Load Session + Scenario
+    DB-->>WS: Session + Scenario Data
+    WS->>Engine: Create ScenarioEngine
 
     loop Each Message
-        Client->>WS: Student Message
-        WS->>Engine: Process Message
-        Engine->>DB: Save to Transcript
-        Engine->>AI: Generate Response
-        AI-->>Engine: Patient Response
-        Engine->>DB: Update Metrics
-        Engine-->>WS: Response Data
-        WS-->>Client: Patient Response
+        Client->>WS: Student Message (type: student_message)
+        WS->>Engine: process_student_input()
+        Engine->>AI: Generate Patient Response
+        AI-->>Engine: Patient Response Text
+        Engine-->>WS: Response + Metadata
+        WS->>Speech: POST /cognitiveservices/v1 (SSML)
+        Speech-->>WS: Audio WAV bytes
+        WS->>WS: base64 encode audio
+        WS-->>Client: JSON {message, audio_base64, metadata}
     end
 
-    Client->>WS: Complete Session
-    WS->>Engine: Finalize
-    Engine->>DB: Mark Completed
-    WS-->>Client: Redirect to Results
+    Client->>WS: Disconnect
+    WS->>WS: Cleanup Engine
 ```
 
 ## Voice Data Flow
+
+### Text-to-Speech (TTS)
 
 ```mermaid
 flowchart LR
@@ -87,24 +89,61 @@ flowchart LR
         Emotion[Emotional State]
     end
 
-    subgraph Processing["Azure Speech"]
-        SSML[Build SSML]
-        Synth[Speech Synthesis]
-        Neural[Neural Voice]
+    subgraph Processing["Azure Speech REST API"]
+        SSML[Build SSML with mstts:express-as]
+        HTTP[POST via httpx\nto tts.speech.microsoft.com]
+        Neural[Neural Voice Processing]
     end
 
     subgraph Output["Audio Output"]
-        Audio[Audio Buffer]
-        Stream[Stream to Client]
+        Audio[WAV Audio Bytes\n16kHz 16-bit mono]
+        Base64[Base64 Encode]
+        WS[Send via WebSocket]
     end
 
     Response --> SSML
     Profile --> SSML
     Emotion --> SSML
-    SSML --> Synth
-    Synth --> Neural
+    SSML --> HTTP
+    HTTP --> Neural
     Neural --> Audio
-    Audio --> Stream
+    Audio --> Base64
+    Base64 --> WS
+```
+
+### Speech-to-Text (STT)
+
+```mermaid
+flowchart LR
+    subgraph Input["Audio Input"]
+        Mic[Browser Microphone]
+        WebM[WebM/Opus Audio]
+    end
+
+    subgraph Conversion["Audio Conversion"]
+        Upload[Upload to API]
+        FFmpeg[pydub + ffmpeg]
+        WAV[WAV 16kHz 16-bit mono]
+    end
+
+    subgraph Processing["Azure Speech REST API"]
+        HTTP[POST via httpx\nto stt.speech.microsoft.com]
+        Recognition[Speech Recognition]
+    end
+
+    subgraph Output["Text Output"]
+        Text[Transcribed Text]
+        Input[Populate Input Field]
+    end
+
+    Mic --> WebM
+    WebM --> Upload
+    Upload --> FFmpeg
+    FFmpeg --> WAV
+    WAV --> HTTP
+    HTTP --> Recognition
+    Recognition --> Text
+    Text --> Input
 ```
 
 ## Assessment Data Flow
