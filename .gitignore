@@ -38,6 +38,9 @@ dist/
 dist-ssr/
 *.local
 
+# Claude Code local settings (may contain credentials)
+.claude/settings.local.json
+
 # IDEs
 .vscode/
 .idea/
