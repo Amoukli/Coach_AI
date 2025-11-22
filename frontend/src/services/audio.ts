@@ -91,7 +91,11 @@ class AudioService {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
 
-      this.mediaRecorder = new MediaRecorder(stream)
+      // Determine best supported MIME type for recording
+      // Prefer webm/opus as it's widely supported and our backend can convert it
+      const mimeType = this.getSupportedMimeType()
+
+      this.mediaRecorder = new MediaRecorder(stream, { mimeType })
       this.audioChunks = []
 
       this.mediaRecorder.ondataavailable = (event) => {
@@ -108,6 +112,30 @@ class AudioService {
   }
 
   /**
+   * Get the best supported MIME type for recording
+   */
+  private getSupportedMimeType(): string {
+    const mimeTypes = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/ogg;codecs=opus',
+      'audio/mp4',
+      'audio/wav',
+    ]
+
+    for (const mimeType of mimeTypes) {
+      if (MediaRecorder.isTypeSupported(mimeType)) {
+        console.log(`Using audio format: ${mimeType}`)
+        return mimeType
+      }
+    }
+
+    // Fallback - let browser choose
+    console.log('Using default audio format')
+    return ''
+  }
+
+  /**
    * Stop recording and return audio blob
    */
   async stopRecording(): Promise<Blob> {
@@ -118,7 +146,9 @@ class AudioService {
       }
 
       this.mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' })
+        // Use the actual MIME type from the recorder
+        const mimeType = this.mediaRecorder?.mimeType || 'audio/webm'
+        const audioBlob = new Blob(this.audioChunks, { type: mimeType })
         this.audioChunks = []
 
         // Stop all tracks
@@ -126,6 +156,7 @@ class AudioService {
           this.mediaRecorder.stream.getTracks().forEach((track) => track.stop())
         }
 
+        console.log(`Recording complete: ${audioBlob.size} bytes, type: ${mimeType}`)
         resolve(audioBlob)
       }
 

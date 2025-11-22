@@ -3,7 +3,8 @@
 **Project:** Coach AI - Clinical Training Platform
 **Developer:** Claude (Anthropic AI Assistant)
 **Date:** January 2025
-**Status:** ✅ Phase 1 Complete - MVP Ready
+**Last Updated:** November 22, 2025
+**Status:** ⚠️ Phase 1 Complete with Known Azure Speech SDK Issue
 
 ---
 
@@ -76,10 +77,13 @@ Coach AI is a full-stack web application designed to help undergraduate medical 
    - ✅ Automatic skill progress tracking
 
 4. **Voice Generation** (`/api/v1/voice`)
-   - ✅ Text-to-speech synthesis with Azure
+   - ⚠️ Text-to-speech synthesis with Azure (Docker incompatibility issue)
    - ✅ Voice profile matching (accent, gender, emotion)
    - ✅ List available voices
    - ✅ Emotional style support (anxious, calm, distressed)
+   - ✅ Speech-to-text transcription endpoint
+   - ✅ Audio format conversion (WebM to WAV with pydub/ffmpeg)
+   - ⚠️ Azure Speech SDK incompatible with Docker (Error 2153)
 
 5. **Analytics & Progress** (`/api/v1/analytics`)
    - ✅ Student dashboard data
@@ -198,6 +202,9 @@ Coach AI is a full-stack web application designed to help undergraduate medical 
    - ✅ Student/patient message distinction
    - ✅ WebSocket integration
    - ✅ Audio playback (prepared)
+   - ✅ Microphone button with recording UI
+   - ✅ Recording timer and visual indicators
+   - ✅ Speech-to-text integration
    - ✅ Complete scenario button
 
 5. **Assessment Results** (`/sessions/:id/results`)
@@ -588,16 +595,16 @@ ELEVENLABS_API_KEY           # Voice fallback
 
 ## ⚠️ Known Limitations
 
-1. **Authentication**: Currently uses simple JWT, Azure AD B2C integration needed for production
-2. **Audio Recording**: UI prepared but needs backend implementation
+1. **~~Azure Speech SDK Docker Incompatibility~~** ✅ **RESOLVED**: Switched from Azure Speech SDK to REST API. Both TTS and STT now work in Docker on any architecture (ARM64/AMD64).
+2. **Authentication**: Currently uses simple JWT, Azure AD B2C integration needed for production
 3. **Scenario Creation**: Currently API-only, no admin UI yet
-4. **Real Clare/Clark Integration**: Placeholder services, need actual API contracts
-5. **Testing**: Test suites prepared but not yet implemented
-6. **Monitoring**: Application Insights configured but needs instrumentation
-7. **Error Boundaries**: Frontend needs React error boundaries
-8. **Rate Limiting**: API needs rate limiting for production
-9. **Data Backup**: Automated backup strategy needed
-10. **GDPR Compliance**: Need data export and deletion workflows
+5. **Real Clare/Clark Integration**: Placeholder services, need actual API contracts
+6. **Testing**: Test suites prepared but not yet implemented
+7. **Monitoring**: Application Insights configured but needs instrumentation
+8. **Error Boundaries**: Frontend needs React error boundaries
+9. **Rate Limiting**: API needs rate limiting for production
+10. **Data Backup**: Automated backup strategy needed
+11. **GDPR Compliance**: Need data export and deletion workflows
 
 ---
 
@@ -799,6 +806,97 @@ Coach_AI/
 
 ---
 
+## 🎙️ Speech-to-Text Feature Implementation (November 22, 2025)
+
+### Overview
+Added comprehensive Speech-to-Text functionality to allow students to speak their questions instead of typing.
+
+### Implementation Details
+
+#### Backend Changes
+
+1. **STT Endpoint** (`/api/v1/voice/transcribe`)
+   - POST endpoint accepting audio file upload (multipart/form-data)
+   - Uses Azure Speech Recognition service
+   - Returns transcribed text in JSON format
+
+2. **Audio Format Conversion**
+   - Added `pydub==0.25.1` to requirements.txt
+   - Added `ffmpeg` to Dockerfile
+   - Converts WebM/Opus (from browser MediaRecorder) to WAV (for Azure)
+   - Specifications: 16kHz, 16-bit, mono
+   - Uses temporary files for conversion
+   - Automatic cleanup after processing
+
+3. **Azure Speech Recognition Service**
+   - Method: `recognize_speech_from_audio()` in `azure_services.py`
+   - Language: en-GB
+   - Async implementation for non-blocking operations
+   - Comprehensive error handling
+
+#### Frontend Changes
+
+1. **Scenario Player UI Updates**
+   - Microphone button next to send button
+   - Recording visual indicators (pulsing red dot)
+   - Timer display during recording
+   - Button state management (mic icon ↔ stop icon)
+   - Disabled states during recording
+
+2. **Recording Functionality**
+   - `startRecording()`: Initiates microphone capture
+   - `stopRecording()`: Stops capture and triggers transcription
+   - Recording timer with state management
+   - Automatic cleanup on unmount
+
+3. **API Integration**
+   - `transcribeAudio()` method in API client
+   - FormData construction for file upload
+   - Error handling with user-friendly alerts
+   - Transcribed text populates input field for review/editing
+
+### Issue Resolved: Azure Speech SDK Docker Incompatibility
+
+**Original Problem:**
+Azure Speech SDK failed to initialize in Docker with Error 2153 on both ARM64 and AMD64 platforms.
+
+**Solution Implemented (November 22, 2025):**
+Switched from Azure Speech SDK to Azure Speech **REST API**. This approach:
+- Works on any architecture (ARM64/AMD64)
+- No platform-specific SDK dependencies
+- Uses `httpx` for async HTTP calls
+- Maintains same functionality (TTS and STT)
+
+### Files Modified
+
+**Backend:**
+- `backend/requirements.txt` - Removed `azure-cognitiveservices-speech`, kept `httpx` and `pydub`
+- `backend/Dockerfile` - Simplified (only needs `ffmpeg` for audio conversion)
+- `backend/app/api/voice.py` - `/transcribe` endpoint (unchanged)
+- `backend/app/core/azure_services.py` - Rewrote to use REST API instead of SDK
+- `docker-compose.yml` - Removed `platform: linux/amd64` requirement
+
+**Frontend:**
+- `frontend/src/services/api.ts` - `transcribeAudio()` method
+- `frontend/src/components/ScenarioPlayer/index.tsx` - Microphone UI and recording logic
+
+### Testing Performed
+
+**UI Testing:** ✅ Complete
+- Microphone button renders correctly
+- Recording indicator appears with timer
+- Button state changes (mic → stop → mic)
+- Disabled states work correctly
+- Recording timer increments properly
+
+**Backend Testing:** ✅ Complete
+- TTS REST API: Working (returns audio bytes)
+- STT REST API: Working (transcribes audio correctly)
+- Audio format conversion: Working (WebM to WAV)
+- Test: Generated audio via TTS, transcribed back via STT - exact match
+
+---
+
 ## 🎉 Conclusion
 
 Coach AI is a fully functional MVP ready for initial deployment and user testing. The application provides a solid foundation for clinical training with room for extensive future enhancements.
@@ -823,5 +921,5 @@ Coach AI is a fully functional MVP ready for initial deployment and user testing
 ---
 
 **Documentation maintained by:** Claude (Anthropic)
-**Last updated:** January 2025
-**Version:** 1.0.0 (Phase 1 Complete)
+**Last updated:** November 22, 2025
+**Version:** 1.0.1 (Phase 1 Complete - Speech Services Fixed)

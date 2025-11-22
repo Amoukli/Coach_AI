@@ -177,6 +177,27 @@ class ApiClient {
     return response.data
   }
 
+  async transcribeAudio(audioBlob: Blob): Promise<string> {
+    const formData = new FormData()
+
+    // Determine file extension from MIME type
+    const mimeType = audioBlob.type || 'audio/webm'
+    let extension = 'webm'
+    if (mimeType.includes('wav')) extension = 'wav'
+    else if (mimeType.includes('mp4')) extension = 'mp4'
+    else if (mimeType.includes('ogg')) extension = 'ogg'
+    else if (mimeType.includes('webm')) extension = 'webm'
+
+    formData.append('file', audioBlob, `recording.${extension}`)
+
+    const response = await this.client.post('/voice/transcribe', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data.text
+  }
+
   // Analytics
   async getStudentDashboard(studentId: number) {
     const response = await this.client.get(`/analytics/student/${studentId}/dashboard`)

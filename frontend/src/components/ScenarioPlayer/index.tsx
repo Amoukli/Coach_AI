@@ -23,6 +23,8 @@ const ScenarioPlayer: React.FC = () => {
   const [inputMessage, setInputMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordingTime, setRecordingTime] = useState(0)
   // const [isPlaying, setIsPlaying] = useState(false) // TODO: Implement audio playback
 
   useEffect(() => {
@@ -141,6 +143,50 @@ const ScenarioPlayer: React.FC = () => {
     }
   }
 
+  const startRecording = async () => {
+    try {
+      setIsRecording(true)
+      setRecordingTime(0)
+      await audioService.startRecording()
+
+      // Start timer
+      const interval = setInterval(() => {
+        setRecordingTime((prev) => prev + 1)
+      }, 1000)
+
+        // Store interval ID for cleanup
+        ; (window as any).recordingInterval = interval
+    } catch (error) {
+      console.error('Error starting recording:', error)
+      setIsRecording(false)
+      alert('Could not access microphone. Please check permissions.')
+    }
+  }
+
+  const stopRecording = async () => {
+    try {
+      // Clear interval
+      if ((window as any).recordingInterval) {
+        clearInterval((window as any).recordingInterval)
+          ; (window as any).recordingInterval = null
+      }
+
+      setIsRecording(false)
+      const audioBlob = await audioService.stopRecording()
+
+      // Transcribe audio
+      setSending(true)
+      const transcribedText = await apiClient.transcribeAudio(audioBlob)
+      setInputMessage(transcribedText)
+    } catch (error) {
+      console.error('Error stopping recording:', error)
+      alert('Failed to transcribe audio. Please try again.')
+    } finally {
+      setSending(false)
+      setRecordingTime(0)
+    }
+  }
+
   const completeScenario = async () => {
     if (!session) return
 
@@ -225,9 +271,8 @@ const ScenarioPlayer: React.FC = () => {
               >
                 <div className="flex items-start space-x-2">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      msg.role === 'patient' ? 'bg-secondary-200' : 'bg-primary-200'
-                    }`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'patient' ? 'bg-secondary-200' : 'bg-primary-200'
+                      }`}
                   >
                     {msg.role === 'patient' ? '🤕' : '👨‍⚕️'}
                   </div>
@@ -253,6 +298,12 @@ const ScenarioPlayer: React.FC = () => {
 
           {/* Input Area */}
           <div className="border-t border-secondary-200 pt-4">
+            {isRecording && (
+              <div className="mb-2 flex items-center justify-center space-x-2 text-sm text-error-600">
+                <div className="w-3 h-3 bg-error-600 rounded-full animate-pulse"></div>
+                <span>Recording... {recordingTime}s</span>
+              </div>
+            )}
             <div className="flex space-x-2">
               <textarea
                 className="input flex-1 resize-none"
@@ -261,9 +312,30 @@ const ScenarioPlayer: React.FC = () => {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                disabled={sending}
+                disabled={sending || isRecording}
               />
-              <button onClick={sendMessage} disabled={sending || !inputMessage.trim()} className="btn btn-primary">
+              <button
+                onClick={isRecording ? stopRecording : startRecording}
+                disabled={sending}
+                className={`btn ${isRecording ? 'btn-error' : 'btn-secondary'} px-3`}
+                title={isRecording ? 'Stop recording' : 'Start recording'}
+              >
+                {isRecording ? (
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <rect x="6" y="6" width="12" height="12" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                    />
+                  </svg>
+                )}
+              </button>
+              <button onClick={sendMessage} disabled={sending || !inputMessage.trim() || isRecording} className="btn btn-primary">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>

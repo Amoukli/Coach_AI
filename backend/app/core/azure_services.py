@@ -1,23 +1,30 @@
 """Azure services integration (Speech, OpenAI)"""
 
 import asyncio
-from typing import Optional, Dict, Any, List
-import azure.cognitiveservices.speech as speechsdk
+import os
+import tempfile
+from typing import Any, Dict, List, Optional
+
+import httpx
 from openai import AzureOpenAI
+from pydub import AudioSegment
 
 from app.core.config import settings
 
 
 class AzureSpeechService:
-    """Azure Speech Services for text-to-speech"""
+    """Azure Speech Services using REST API (no SDK required)"""
 
     def __init__(self):
-        self.speech_config = speechsdk.SpeechConfig(
-            subscription=settings.AZURE_SPEECH_KEY,
-            region=settings.AZURE_SPEECH_REGION
+        self.speech_key = settings.AZURE_SPEECH_KEY
+        self.speech_region = settings.AZURE_SPEECH_REGION
+        self.default_voice = "en-GB-RyanNeural"
+
+        # REST API endpoints
+        self.tts_endpoint = (
+            f"https://{self.speech_region}.tts.speech.microsoft.com/cognitiveservices/v1"
         )
-        # Default to British English voice
-        self.speech_config.speech_synthesis_voice_name = "en-GB-RyanNeural"
+        self.stt_endpoint = f"https://{self.speech_region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1"
 
     def get_voice_for_profile(self, voice_profile: Dict[str, str]) -> str:
         """
@@ -47,13 +54,10 @@ class AzureSpeechService:
         return voice_map.get((accent, gender), "en-GB-RyanNeural")
 
     async def synthesize_speech(
-        self,
-        text: str,
-        voice_name: Optional[str] = None,
-        emotional_style: str = "neutral"
+        self, text: str, voice_name: Optional[str] = None, emotional_style: str = "neutral"
     ) -> bytes:
         """
-        Convert text to speech audio
+        Convert text to speech audio using Azure REST API
 
         Args:
             text: Text to synthesize
@@ -63,33 +67,23 @@ class AzureSpeechService:
         Returns:
             Audio data as bytes (WAV format)
         """
-        if voice_name:
-            self.speech_config.speech_synthesis_voice_name = voice_name
+        voice = voice_name or self.default_voice
+        ssml = self._build_ssml(text, voice, emotional_style)
 
-        # Configure audio output to in-memory stream (None means audio data is returned)
-        synthesizer = speechsdk.SpeechSynthesizer(
-            speech_config=self.speech_config,
-            audio_config=None
-        )
+        headers = {
+            "Ocp-Apim-Subscription-Key": self.speech_key,
+            "Content-Type": "application/ssml+xml",
+            "X-Microsoft-OutputFormat": "riff-16khz-16bit-mono-pcm",
+            "User-Agent": "CoachAI",
+        }
 
-        # Build SSML with emotional style if supported
-        ssml = self._build_ssml(text, voice_name or self.speech_config.speech_synthesis_voice_name, emotional_style)
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(self.tts_endpoint, headers=headers, content=ssml)
 
-        # Run synthesis in executor to avoid blocking
-        loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(
-            None,
-            synthesizer.speak_ssml,
-            ssml
-        )
-
-        if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
-            return result.audio_data
-        elif result.reason == speechsdk.ResultReason.Canceled:
-            cancellation = result.cancellation_details
-            raise Exception(f"Speech synthesis canceled: {cancellation.reason}")
-
-        raise Exception("Speech synthesis failed")
+            if response.status_code == 200:
+                return response.content
+            else:
+                raise Exception(f"TTS failed with status {response.status_code}: {response.text}")
 
     def _build_ssml(self, text: str, voice_name: str, emotional_style: str) -> str:
         """Build SSML markup for speech synthesis"""
@@ -99,23 +93,116 @@ class AzureSpeechService:
             "calm": "calm",
             "neutral": "general",
             "distressed": "sad",
-            "cheerful": "cheerful"
+            "cheerful": "cheerful",
         }
 
         style = style_map.get(emotional_style, "general")
 
-        ssml = f"""
-        <speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis"
-               xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="en-GB">
-            <voice name="{voice_name}">
-                <mstts:express-as style="{style}">
-                    {text}
-                </mstts:express-as>
-            </voice>
-        </speak>
-        """
+        ssml = f"""<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="en-GB">
+    <voice name="{voice_name}">
+        <mstts:express-as style="{style}">
+            {text}
+        </mstts:express-as>
+    </voice>
+</speak>"""
 
-        return ssml.strip()
+        return ssml
+
+    async def recognize_speech_from_audio(self, audio_data: bytes) -> str:
+        """
+        Convert speech audio to text using Azure Speech REST API
+
+        Args:
+            audio_data: Audio data as bytes (WAV, WebM, or other supported format)
+
+        Returns:
+            Transcribed text
+        """
+        print(f"Received audio data: {len(audio_data)} bytes")
+
+        # Convert audio to WAV format (16kHz, 16-bit, mono) for Azure
+        wav_data = await self._convert_audio_to_wav(audio_data)
+
+        # Azure STT REST API endpoint with language parameter
+        stt_url = f"{self.stt_endpoint}?language=en-GB&format=detailed"
+
+        headers = {
+            "Ocp-Apim-Subscription-Key": self.speech_key,
+            "Content-Type": "audio/wav; codecs=audio/pcm; samplerate=16000",
+            "Accept": "application/json",
+        }
+
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(stt_url, headers=headers, content=wav_data)
+
+            if response.status_code == 200:
+                result = response.json()
+
+                # Check recognition status
+                if result.get("RecognitionStatus") == "Success":
+                    # Return the best transcript
+                    return result.get("DisplayText", "")
+                elif result.get("RecognitionStatus") == "NoMatch":
+                    raise Exception("No speech could be recognized from the audio")
+                else:
+                    raise Exception(f"Recognition failed: {result.get('RecognitionStatus')}")
+            else:
+                raise Exception(f"STT failed with status {response.status_code}: {response.text}")
+
+    async def _convert_audio_to_wav(self, audio_data: bytes) -> bytes:
+        """
+        Convert audio data to WAV format suitable for Azure STT
+
+        Args:
+            audio_data: Input audio bytes (WebM, MP3, OGG, etc.)
+
+        Returns:
+            WAV audio bytes (16kHz, 16-bit, mono)
+        """
+        loop = asyncio.get_event_loop()
+
+        def convert():
+            # Save input to temp file (no extension - pydub auto-detects format)
+            with tempfile.NamedTemporaryFile(delete=False) as temp_input:
+                temp_input.write(audio_data)
+                temp_input_path = temp_input.name
+
+            temp_output_path = None
+            try:
+                # Load audio - pydub/ffmpeg auto-detects format from content
+                # This handles WebM, OGG, MP4, WAV, MP3, etc.
+                audio_segment = AudioSegment.from_file(temp_input_path)
+
+                print(
+                    f"Audio loaded: {len(audio_segment)}ms, {audio_segment.channels} channels, {audio_segment.frame_rate}Hz"
+                )
+
+                # Convert to Azure-compatible format: 16kHz, 16-bit, mono
+                audio_segment = (
+                    audio_segment.set_frame_rate(16000).set_channels(1).set_sample_width(2)
+                )
+
+                # Export to WAV
+                with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_output:
+                    temp_output_path = temp_output.name
+
+                audio_segment.export(temp_output_path, format="wav")
+
+                # Read converted WAV
+                with open(temp_output_path, "rb") as f:
+                    wav_data = f.read()
+
+                print(f"Audio converted successfully: {len(wav_data)} bytes WAV")
+                return wav_data
+
+            finally:
+                # Clean up temp files
+                if os.path.exists(temp_input_path):
+                    os.unlink(temp_input_path)
+                if temp_output_path and os.path.exists(temp_output_path):
+                    os.unlink(temp_output_path)
+
+        return await loop.run_in_executor(None, convert)
 
 
 class AzureOpenAIService:
@@ -125,7 +212,7 @@ class AzureOpenAIService:
         self.client = AzureOpenAI(
             api_key=settings.AZURE_OPENAI_KEY,
             api_version=settings.AZURE_OPENAI_API_VERSION,
-            azure_endpoint=settings.AZURE_OPENAI_ENDPOINT
+            azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
         )
         self.deployment_name = settings.AZURE_OPENAI_DEPLOYMENT_NAME
 
@@ -133,7 +220,7 @@ class AzureOpenAIService:
         self,
         scenario_context: Dict[str, Any],
         student_message: str,
-        conversation_history: List[Dict[str, str]]
+        conversation_history: List[Dict[str, str]],
     ) -> str:
         """
         Generate contextual patient response using GPT-4
@@ -160,11 +247,8 @@ class AzureOpenAIService:
         response = await loop.run_in_executor(
             None,
             lambda: self.client.chat.completions.create(
-                model=self.deployment_name,
-                messages=messages,
-                temperature=0.7,
-                max_tokens=200
-            )
+                model=self.deployment_name, messages=messages, temperature=0.7, max_tokens=200
+            ),
         )
 
         return response.choices[0].message.content

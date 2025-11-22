@@ -12,7 +12,7 @@ asyncpg==0.29.0
 
 # Azure Services
 azure-identity==1.15.0
-azure-cognitiveservices-speech==1.32.1
+# Note: Using REST API for Speech Services instead of SDK (better Docker/ARM compatibility)
 openai==1.3.7
 azure-storage-blob==12.19.0
 
@@ -30,3 +30,4 @@ aiohttp==3.9.1
 # Utilities
 python-dateutil==2.8.2
 pytz==2023.3
+pydub==0.25.1
