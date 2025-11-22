@@ -256,28 +256,78 @@ class AzureOpenAIService:
     def _build_system_prompt(self, scenario_context: Dict[str, Any]) -> str:
         """Build system prompt for patient role-play"""
         patient = scenario_context.get("patient_profile", {})
+        dialogue_tree = scenario_context.get("dialogue_tree", {})
+        # Note: assessment_rubric available for future prompt enhancements
 
-        prompt = f"""You are roleplaying as a patient in a medical training scenario.
+        # Extract patient details
+        patient_name = patient.get("name", "the patient")
+        age = patient.get("age", "unknown")
+        gender = patient.get("gender", "unknown")
+        presenting_complaint = patient.get("presenting_complaint", "unknown")
+        emotional_state = patient.get("voice_profile", {}).get("emotional_state", "neutral")
 
-Patient Details:
-- Age: {patient.get('age', 'unknown')}
-- Gender: {patient.get('gender', 'unknown')}
-- Presenting Complaint: {patient.get('presenting_complaint', 'unknown')}
-- Emotional State: {patient.get('voice_profile', {}).get('emotional_state', 'neutral')}
+        # Build symptom details from dialogue tree branches
+        symptom_details = self._extract_symptom_details(dialogue_tree)
 
-Instructions:
-1. Stay in character as the patient
-2. Answer questions naturally based on the scenario
-3. Don't volunteer information unless asked
-4. Show appropriate emotion based on your state
-5. Keep responses concise (1-3 sentences)
-6. Use natural language, not medical jargon
-7. If you don't know something, say you're not sure
+        # Build the comprehensive prompt
+        prompt = f"""You are roleplaying as {patient_name}, a {age}-year-old {gender} patient in a medical training scenario.
 
-Remember: You are helping train a medical student. Be realistic but supportive of their learning.
-"""
+## Your Presenting Complaint
+You came to see the doctor because: "{presenting_complaint}"
+
+## Your Current Emotional State
+You are feeling {emotional_state}. Reflect this in your tone and responses.
+
+## Your Symptoms and Medical History
+When asked about specific topics, provide these details:
+{symptom_details}
+
+## How to Respond
+1. **Stay in character** as {patient_name} throughout the conversation
+2. **Only reveal information when asked** - don't volunteer details the doctor hasn't asked about
+3. **Use natural, everyday language** - avoid medical terms (say "tummy" not "abdomen", "sick" not "nauseous")
+4. **Keep responses concise** - 1-3 sentences maximum
+5. **Show your emotions** - you're {emotional_state}, so express appropriate concern, discomfort, or anxiety
+6. **Be consistent** - if you said the pain started yesterday, stick to that timeline
+7. **Answer directly** - if asked "where does it hurt?", describe the location clearly
+
+## Important Guidelines
+- If the doctor asks something not covered above, give a reasonable response consistent with your character
+- If you genuinely wouldn't know something (like a specific medical term), say you're not sure
+- React naturally to the doctor's manner - if they're reassuring, you can relax slightly
+- You can ask questions back like "Is it serious, doctor?" or "What do you think it might be?"
+
+Remember: This is a training scenario to help medical students learn. Be realistic and educational."""
 
         return prompt
+
+    def _extract_symptom_details(self, dialogue_tree: Dict[str, Any]) -> str:
+        """Extract symptom details from dialogue tree for the prompt"""
+        if not dialogue_tree:
+            return "No specific symptom details available."
+
+        root = dialogue_tree.get("root", {})
+        branches = root.get("branches", {})
+
+        if not branches:
+            return "No specific symptom details available."
+
+        details = []
+        for topic, branch_data in branches.items():
+            if isinstance(branch_data, dict) and "patient_says" in branch_data:
+                # Format the topic name nicely
+                topic_name = topic.replace("_", " ").title()
+                response = branch_data["patient_says"]
+                triggers = branch_data.get("triggers", [])
+
+                # Add trigger words as context
+                trigger_hint = f" (if asked about: {', '.join(triggers[:3])})" if triggers else ""
+                details.append(f'- **{topic_name}**{trigger_hint}: "{response}"')
+
+        if not details:
+            return "No specific symptom details available."
+
+        return "\n".join(details)
 
 
 # Create singleton instances
