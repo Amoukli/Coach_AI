@@ -41,7 +41,7 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-development-secret-key-change-in-production}
       ENVIRONMENT: ${ENVIRONMENT:-development}
       DEBUG: ${DEBUG:-True}
-      CORS_ORIGINS: '["http://localhost:3000","http://localhost:80","http://localhost"]'
+      CORS_ORIGINS: '["http://localhost:3000","http://localhost:80","http://localhost","http://127.0.0.1","http://127.0.0.1:80"]'
     ports:
       - "8000:8000"
     depends_on:

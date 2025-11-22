@@ -54,6 +54,11 @@ class Settings(BaseSettings):
     @validator("CORS_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v):
         if isinstance(v, str):
+            # Handle JSON array string
+            if v.startswith("["):
+                import json
+                return json.loads(v)
+            # Handle comma-separated string
             return [i.strip() for i in v.split(",")]
         return v
 

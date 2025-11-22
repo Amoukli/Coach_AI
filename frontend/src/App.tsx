@@ -1,44 +1,44 @@
 import React from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 
 // Layout components
 import Header from './components/Layout/Header'
 import Footer from './components/Layout/Footer'
 
-// Page components (will be created)
+// Page components
+import Landing from './components/Landing'
 import Dashboard from './components/Dashboard'
 import ScenarioLibrary from './components/ScenarioLibrary'
 import ScenarioPlayer from './components/ScenarioPlayer'
 import AssessmentResults from './components/Assessment/AssessmentResults'
 
+// Layout wrapper for app pages (not landing)
+const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="min-h-screen flex flex-col bg-secondary-50">
+    <Header />
+    <main className="flex-grow container-app py-8">
+      {children}
+    </main>
+    <Footer />
+  </div>
+)
+
 function App() {
   return (
     <Router>
-      <div className="min-h-screen flex flex-col bg-secondary-50">
-        <Header />
+      <Routes>
+        {/* Landing page - entry point (no header/footer) */}
+        <Route path="/" element={<Landing />} />
 
-        <main className="flex-grow container-app py-8">
-          <Routes>
-            {/* Dashboard - default route */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+        {/* App pages with header/footer */}
+        <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
+        <Route path="/scenarios" element={<AppLayout><ScenarioLibrary /></AppLayout>} />
+        <Route path="/scenarios/:scenarioId/play" element={<AppLayout><ScenarioPlayer /></AppLayout>} />
+        <Route path="/sessions/:sessionId/results" element={<AppLayout><AssessmentResults /></AppLayout>} />
 
-            {/* Scenario Library */}
-            <Route path="/scenarios" element={<ScenarioLibrary />} />
-
-            {/* Scenario Player */}
-            <Route path="/scenarios/:scenarioId/play" element={<ScenarioPlayer />} />
-
-            {/* Assessment Results */}
-            <Route path="/sessions/:sessionId/results" element={<AssessmentResults />} />
-
-            {/* 404 Not Found */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </main>
-
-        <Footer />
-      </div>
+        {/* 404 Not Found */}
+        <Route path="*" element={<AppLayout><NotFound /></AppLayout>} />
+      </Routes>
     </Router>
   )
 }

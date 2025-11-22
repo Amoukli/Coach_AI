@@ -64,7 +64,16 @@ class ApiClient {
 
   // Scenarios
   async getScenarios(params?: { specialty?: string; difficulty?: string; skip?: number; limit?: number }) {
-    const response = await this.client.get('/scenarios', { params })
+    // Filter out empty string params to avoid 422 validation errors
+    const cleanParams: Record<string, string | number> = {}
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') {
+          cleanParams[key] = value
+        }
+      })
+    }
+    const response = await this.client.get('/scenarios/', { params: cleanParams })
     return response.data
   }
 
@@ -80,7 +89,7 @@ class ApiClient {
 
   // Sessions
   async createSession(scenarioId: string, studentId: number) {
-    const response = await this.client.post('/sessions', {
+    const response = await this.client.post('/sessions/', {
       scenario_id: scenarioId,
       student_id: studentId,
     })

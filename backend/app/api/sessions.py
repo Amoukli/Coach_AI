@@ -12,6 +12,8 @@ from app.core.security import get_current_user
 from app.models.session import Session as SessionModel, SessionStatus
 from app.models.scenario import Scenario
 from app.models.student import Student
+from app.models.assessment import Assessment
+from app.services.assessment_engine import AssessmentEngine
 
 router = APIRouter()
 
@@ -34,8 +36,8 @@ class SessionResponse(BaseModel):
     scenario_id: int
     student_id: int
     status: SessionStatus
-    started_at: str
-    completed_at: Optional[str]
+    started_at: datetime
+    completed_at: Optional[datetime]
     duration: Optional[int]
     current_node_id: Optional[str]
     transcript: List[dict]
@@ -50,7 +52,7 @@ class SessionListItem(BaseModel):
     session_id: str
     scenario_id: int
     status: SessionStatus
-    started_at: str
+    started_at: datetime
     duration: Optional[int]
 
     class Config:
@@ -190,7 +192,7 @@ async def complete_session(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Mark session as completed
+    Mark session as completed and create assessment
 
     Args:
         session_id: Session ID
@@ -215,19 +217,73 @@ async def complete_session(
     session.duration = duration
     session.diagnosis_submitted = diagnosis
 
-    # Check if diagnosis is correct
+    # Get scenario for assessment
     scenario = db.query(Scenario).filter(Scenario.id == session.scenario_id).first()
+
+    # Check if diagnosis is correct
+    diagnosis_correct = False
     if scenario and diagnosis:
-        session.diagnosis_correct = (
+        diagnosis_correct = (
             diagnosis.lower().strip() == scenario.correct_diagnosis.lower().strip()
         )
+        session.diagnosis_correct = diagnosis_correct
 
     db.commit()
+
+    # Create assessment
+    assessment = None
+    if scenario:
+        # Build scenario data for assessment engine
+        scenario_data = {
+            "id": scenario.id,
+            "scenario_id": scenario.scenario_id,
+            "title": scenario.title,
+            "assessment_rubric": scenario.assessment_rubric or {},
+        }
+
+        # Build session data for assessment engine
+        session_data = {
+            "questions_asked": session.questions_asked or 0,
+            "relevant_questions": session.questions_asked or 0,  # Simplified: assume all questions are relevant
+            "topics_covered": session.topics_covered or [],
+            "red_flags_caught": session.red_flags_identified or [],
+            "duration": duration,
+            "diagnosis_correct": diagnosis_correct,
+            "relevance_percentage": 70,  # Default relevance
+        }
+
+        # Calculate assessment using engine
+        engine = AssessmentEngine(scenario_data, session_data)
+        assessment_result = engine.calculate_assessment()
+
+        # Create assessment record
+        assessment_id = f"assessment_{uuid.uuid4().hex[:12]}"
+        assessment = Assessment(
+            assessment_id=assessment_id,
+            student_id=session.student_id,
+            session_id=session.session_id,
+            overall_score=assessment_result["overall_score"],
+            history_taking_score=assessment_result["history_taking_score"],
+            clinical_reasoning_score=assessment_result["clinical_reasoning_score"],
+            management_score=assessment_result["management_score"],
+            communication_score=assessment_result["communication_score"],
+            efficiency_score=assessment_result["efficiency_score"],
+            metrics=assessment_result["metrics"],
+            skills_breakdown=assessment_result["skills_breakdown"],
+            feedback_summary=assessment_result["feedback_summary"],
+            strengths=assessment_result["strengths"],
+            areas_for_improvement=assessment_result["areas_for_improvement"],
+        )
+
+        db.add(assessment)
+        db.commit()
+        db.refresh(assessment)
 
     return {
         "status": "success",
         "message": "Session completed",
-        "duration": duration
+        "duration": duration,
+        "assessment_id": assessment.assessment_id if assessment else None
     }
 
 
