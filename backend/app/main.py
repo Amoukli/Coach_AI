@@ -254,7 +254,15 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
 
 
 # Import and include routers
-from app.api import analytics, assessments, guidelines, scenarios, sessions, voice  # noqa: E402
+from app.api import (  # noqa: E402
+    analytics,
+    assessments,
+    clark,
+    guidelines,
+    scenarios,
+    sessions,
+    voice,
+)
 
 app.include_router(scenarios.router, prefix=f"{settings.API_V1_STR}/scenarios", tags=["scenarios"])
 app.include_router(sessions.router, prefix=f"{settings.API_V1_STR}/sessions", tags=["sessions"])
@@ -266,6 +274,7 @@ app.include_router(analytics.router, prefix=f"{settings.API_V1_STR}/analytics", 
 app.include_router(
     guidelines.router, prefix=f"{settings.API_V1_STR}/guidelines", tags=["guidelines"]
 )
+app.include_router(clark.router, prefix=f"{settings.API_V1_STR}/clark", tags=["clark"])
 
 
 if __name__ == "__main__":

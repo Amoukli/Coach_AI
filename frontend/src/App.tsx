@@ -12,6 +12,11 @@ import ScenarioLibrary from './components/ScenarioLibrary'
 import ScenarioPlayer from './components/ScenarioPlayer'
 import AssessmentResults from './components/Assessment/AssessmentResults'
 
+// Admin components
+import ScenarioManager from './components/Admin/ScenarioManager'
+import ScenarioEditor from './components/Admin/ScenarioEditor'
+import ClarkImport from './components/Admin/ClarkImport'
+
 // Layout wrapper for app pages (not landing)
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="min-h-screen flex flex-col bg-secondary-50">
@@ -35,6 +40,12 @@ function App() {
         <Route path="/scenarios" element={<AppLayout><ScenarioLibrary /></AppLayout>} />
         <Route path="/scenarios/:scenarioId/play" element={<AppLayout><ScenarioPlayer /></AppLayout>} />
         <Route path="/sessions/:sessionId/results" element={<AppLayout><AssessmentResults /></AppLayout>} />
+
+        {/* Admin routes */}
+        <Route path="/admin/scenarios" element={<AppLayout><ScenarioManager /></AppLayout>} />
+        <Route path="/admin/scenarios/new" element={<AppLayout><ScenarioEditor /></AppLayout>} />
+        <Route path="/admin/scenarios/:scenarioId/edit" element={<AppLayout><ScenarioEditor /></AppLayout>} />
+        <Route path="/admin/import" element={<AppLayout><ClarkImport /></AppLayout>} />
 
         {/* 404 Not Found */}
         <Route path="*" element={<AppLayout><NotFound /></AppLayout>} />

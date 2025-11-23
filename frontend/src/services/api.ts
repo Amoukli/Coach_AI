@@ -63,7 +63,7 @@ class ApiClient {
   }
 
   // Scenarios
-  async getScenarios(params?: { specialty?: string; difficulty?: string; skip?: number; limit?: number }) {
+  async getScenarios(params?: { specialty?: string; difficulty?: string; status?: string; skip?: number; limit?: number }) {
     // Filter out empty string params to avoid 422 validation errors
     const cleanParams: Record<string, string | number> = {}
     if (params) {
@@ -247,6 +247,46 @@ class ApiClient {
 
   async getGuideline(guidelineId: string) {
     const response = await this.client.get(`/guidelines/${guidelineId}`)
+    return response.data
+  }
+
+  // Admin - Scenario Management
+  async publishScenario(scenarioId: string) {
+    const response = await this.client.post(`/scenarios/${scenarioId}/publish`)
+    return response.data
+  }
+
+  async deleteScenario(scenarioId: string) {
+    await this.client.delete(`/scenarios/${scenarioId}`)
+  }
+
+  async updateScenario(scenarioId: string, scenarioData: any) {
+    const response = await this.client.put(`/scenarios/${scenarioId}`, scenarioData)
+    return response.data
+  }
+
+  async archiveScenario(scenarioId: string) {
+    const response = await this.client.post(`/scenarios/${scenarioId}/archive`)
+    return response.data
+  }
+
+  // Clark Integration - Import Consultations
+  async getClarkConsultations(specialty?: string, limit: number = 20) {
+    const params: Record<string, string | number> = { limit }
+    if (specialty) params.specialty = specialty
+    const response = await this.client.get('/clark/consultations', { params })
+    return response.data
+  }
+
+  async previewClarkConsultation(consultationId: string) {
+    const response = await this.client.get(`/clark/consultations/${consultationId}/preview`)
+    return response.data
+  }
+
+  async importClarkConsultation(consultationId: string, difficulty?: string) {
+    const params: Record<string, string> = {}
+    if (difficulty) params.difficulty = difficulty
+    const response = await this.client.post(`/clark/consultations/${consultationId}/import`, null, { params })
     return response.data
   }
 }

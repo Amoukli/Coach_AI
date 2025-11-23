@@ -38,12 +38,22 @@ const Header: React.FC = () => {
             <Link
               to="/scenarios"
               className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                isActive('/scenarios')
+                isActive('/scenarios') && !isActive('/admin')
                   ? 'text-primary-600 bg-primary-50'
                   : 'text-secondary-600 hover:text-secondary-900'
               }`}
             >
               Scenarios
+            </Link>
+            <Link
+              to="/admin/scenarios"
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive('/admin')
+                  ? 'text-primary-600 bg-primary-50'
+                  : 'text-secondary-600 hover:text-secondary-900'
+              }`}
+            >
+              Admin
             </Link>
           </nav>
 

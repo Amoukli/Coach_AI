@@ -1,14 +1,15 @@
 """Scenario management API endpoints"""
 
-from typing import List, Optional
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, field_serializer
+from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.models.scenario import Scenario, DifficultyLevel, ScenarioStatus
+from app.models.scenario import DifficultyLevel, Scenario, ScenarioStatus
 
 router = APIRouter()
 
@@ -40,7 +41,7 @@ class ScenarioResponse(ScenarioBase):
     created_at: datetime
     published_at: Optional[datetime]
 
-    @field_serializer('created_at', 'published_at')
+    @field_serializer("created_at", "published_at")
     def serialize_dt(self, dt: Optional[datetime], _info):
         return dt.isoformat() if dt else None
 
@@ -50,6 +51,7 @@ class ScenarioResponse(ScenarioBase):
 
 class ScenarioListItem(BaseModel):
     """Simplified scenario info for list view"""
+
     id: int
     scenario_id: str
     title: str
@@ -70,7 +72,7 @@ async def list_scenarios(
     status: Optional[ScenarioStatus] = Query(None, description="Filter by status"),
     skip: int = 0,
     limit: int = 50,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     List all scenarios with optional filters
@@ -99,19 +101,13 @@ async def list_scenarios(
 
 
 @router.get("/{scenario_id}", response_model=ScenarioResponse)
-async def get_scenario(
-    scenario_id: str,
-    db: Session = Depends(get_db)
-):
+async def get_scenario(scenario_id: str, db: Session = Depends(get_db)):
     """Get scenario by ID"""
-    scenario = db.query(Scenario).filter(
-        Scenario.scenario_id == scenario_id
-    ).first()
+    scenario = db.query(Scenario).filter(Scenario.scenario_id == scenario_id).first()
 
     if not scenario:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Scenario {scenario_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Scenario {scenario_id} not found"
         )
 
     return scenario
@@ -121,24 +117,22 @@ async def get_scenario(
 async def create_scenario(
     scenario_data: ScenarioCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """Create a new scenario"""
     # Check if scenario_id already exists
-    existing = db.query(Scenario).filter(
-        Scenario.scenario_id == scenario_data.scenario_id
-    ).first()
+    existing = db.query(Scenario).filter(Scenario.scenario_id == scenario_data.scenario_id).first()
 
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Scenario with ID {scenario_data.scenario_id} already exists"
+            detail=f"Scenario with ID {scenario_data.scenario_id} already exists",
         )
 
     scenario = Scenario(
         **scenario_data.model_dump(),
         created_by=current_user.get("sub"),
-        status=ScenarioStatus.DRAFT
+        status=ScenarioStatus.DRAFT,
     )
 
     db.add(scenario)
@@ -153,17 +147,14 @@ async def update_scenario(
     scenario_id: str,
     scenario_data: ScenarioCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """Update an existing scenario"""
-    scenario = db.query(Scenario).filter(
-        Scenario.scenario_id == scenario_id
-    ).first()
+    scenario = db.query(Scenario).filter(Scenario.scenario_id == scenario_id).first()
 
     if not scenario:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Scenario {scenario_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Scenario {scenario_id} not found"
         )
 
     # Update fields
@@ -178,19 +169,14 @@ async def update_scenario(
 
 @router.delete("/{scenario_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_scenario(
-    scenario_id: str,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    scenario_id: str, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)
 ):
     """Delete a scenario"""
-    scenario = db.query(Scenario).filter(
-        Scenario.scenario_id == scenario_id
-    ).first()
+    scenario = db.query(Scenario).filter(Scenario.scenario_id == scenario_id).first()
 
     if not scenario:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Scenario {scenario_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Scenario {scenario_id} not found"
         )
 
     db.delete(scenario)
@@ -201,25 +187,40 @@ async def delete_scenario(
 
 @router.post("/{scenario_id}/publish", response_model=ScenarioResponse)
 async def publish_scenario(
-    scenario_id: str,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    scenario_id: str, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)
 ):
     """Publish a scenario (make it available to students)"""
     from datetime import datetime
 
-    scenario = db.query(Scenario).filter(
-        Scenario.scenario_id == scenario_id
-    ).first()
+    scenario = db.query(Scenario).filter(Scenario.scenario_id == scenario_id).first()
 
     if not scenario:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Scenario {scenario_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Scenario {scenario_id} not found"
         )
 
     scenario.status = ScenarioStatus.PUBLISHED
     scenario.published_at = datetime.utcnow()
+
+    db.commit()
+    db.refresh(scenario)
+
+    return scenario
+
+
+@router.post("/{scenario_id}/archive", response_model=ScenarioResponse)
+async def archive_scenario(
+    scenario_id: str, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)
+):
+    """Archive a scenario (make it unavailable to students)"""
+    scenario = db.query(Scenario).filter(Scenario.scenario_id == scenario_id).first()
+
+    if not scenario:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Scenario {scenario_id} not found"
+        )
+
+    scenario.status = ScenarioStatus.ARCHIVED
 
     db.commit()
     db.refresh(scenario)
