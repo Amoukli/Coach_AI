@@ -3,8 +3,8 @@
 **Project:** Coach AI - Clinical Training Platform
 **Developer:** Claude (Anthropic AI Assistant)
 **Date:** January 2025
-**Last Updated:** November 22, 2025
-**Status:** ⚠️ Phase 1 Complete with Known Azure Speech SDK Issue
+**Last Updated:** November 23, 2025
+**Status:** ✅ Phase 2 - Admin UI & External Integrations Complete
 
 ---
 
@@ -12,7 +12,7 @@
 
 Coach AI is a full-stack web application designed to help undergraduate medical students and newly qualified physicians train on clinical scenarios through interactive patient simulations. The application integrates with the existing Clare (clinical guidelines) and Clark (consultation transcription) ecosystem.
 
-**Current Status:** All Phase 1 features have been implemented and the application is ready for initial deployment and testing.
+**Current Status:** Phase 1 and Phase 2 features complete. Admin UI for scenario management, Clare guidelines integration, Clark consultation import, and Past Cases browser are all implemented and functional.
 
 ---
 
@@ -58,12 +58,14 @@ Coach AI is a full-stack web application designed to help undergraduate medical 
    - ✅ Update existing scenarios
    - ✅ Delete scenarios
    - ✅ Publish scenarios (status management)
+   - ✅ Archive scenarios (remove from student view)
    - ✅ List available specialties
 
 2. **Session Management** (`/api/v1/sessions`)
    - ✅ Create new consultation session
    - ✅ Get session details with transcript
    - ✅ List student sessions
+   - ✅ Get student session history with scenario/assessment details
    - ✅ Add messages to session transcript
    - ✅ Complete session with diagnosis
    - ✅ Delete session
@@ -128,11 +130,22 @@ Coach AI is a full-stack web application designed to help undergraduate medical 
    - ✅ Context-aware dialogue generation
    - ✅ Voice profile mapping
 
-4. **External API Integration** (Ready for implementation)
+4. **External API Integration** (FULLY IMPLEMENTED)
    - ✅ Clark integration service (import consultations)
    - ✅ Clare integration service (fetch guidelines)
    - ✅ Scenario enrichment with guidelines
    - ✅ Consultation-to-scenario conversion
+
+5. **Guidelines Integration** (`/api/v1/guidelines`)
+   - ✅ Search clinical guidelines by condition/diagnosis
+   - ✅ Filter by specialty
+   - ✅ Mock data fallback when Clare API unavailable
+
+6. **Clark Import** (`/api/v1/clark`)
+   - ✅ List available consultations from Clark
+   - ✅ Preview consultation-to-scenario conversion
+   - ✅ Import consultation as draft scenario
+   - ✅ Mock data fallback when Clark API unavailable
 
 #### Database Models
 
@@ -184,7 +197,7 @@ Coach AI is a full-stack web application designed to help undergraduate medical 
    - ✅ Stats overview cards (scenarios, score, time)
    - ✅ Skills radar chart
    - ✅ Progress line chart
-   - ✅ Recent activity feed
+   - ✅ Past Cases browser with filtering
    - ✅ Quick action cards
 
 3. **Scenario Library** (`/scenarios`)
@@ -206,6 +219,7 @@ Coach AI is a full-stack web application designed to help undergraduate medical 
    - ✅ Recording timer and visual indicators
    - ✅ Speech-to-text integration
    - ✅ Complete scenario button
+   - ✅ Guidelines lookup panel (Clare integration)
 
 5. **Assessment Results** (`/sessions/:id/results`)
    - ✅ Overall score display
@@ -213,6 +227,20 @@ Coach AI is a full-stack web application designed to help undergraduate medical 
    - ✅ Strengths and improvements sections
    - ✅ Detailed feedback
    - ✅ Navigation to next actions
+
+6. **Admin Panel** (`/admin/*`)
+   - ✅ Scenario Manager (`/admin/scenarios`)
+     - List all scenarios with status filtering
+     - Publish, archive, delete actions
+     - Link to create/edit scenarios
+   - ✅ Scenario Editor (`/admin/scenarios/new`, `/admin/scenarios/:id/edit`)
+     - Multi-tab form (Basic Info, Patient Profile, Dialogue, Assessment)
+     - Create new scenarios
+     - Edit existing scenarios
+   - ✅ Clark Import (`/admin/import`)
+     - Browse available Clark consultations
+     - Preview scenario conversion
+     - Import as draft scenario
 
 #### Frontend Services
 
@@ -222,6 +250,9 @@ Coach AI is a full-stack web application designed to help undergraduate medical 
    - ✅ Token management
    - ✅ Error handling (401 redirect)
    - ✅ Complete CRUD operations for all entities
+   - ✅ Guidelines search API
+   - ✅ Clark consultation import API
+   - ✅ Session history API
 
 2. **WebSocket Service** (`websocket.ts`)
    - ✅ Connection management
@@ -567,12 +598,12 @@ ELEVENLABS_API_KEY           # Voice fallback
 
 ---
 
-## 🔜 Future Enhancements (Phase 2+)
+## 🔜 Future Enhancements (Phase 3+)
 
 ### High Priority
-1. **Audio Recording**: Allow students to speak questions
-2. **Speech-to-Text**: Azure Speech recognition for student input
-3. **Scenario Builder UI**: Visual editor for creating scenarios
+1. **~~Audio Recording~~** ✅ **COMPLETED**: Microphone recording with visual indicators
+2. **~~Speech-to-Text~~** ✅ **COMPLETED**: Azure Speech REST API integration
+3. **~~Scenario Builder UI~~** ✅ **COMPLETED**: Full Admin UI with ScenarioEditor
 4. **Mobile App**: React Native version
 5. **Offline Mode**: PWA with service workers
 6. **Advanced Analytics**: ML-based insights
@@ -597,14 +628,14 @@ ELEVENLABS_API_KEY           # Voice fallback
 
 1. **~~Azure Speech SDK Docker Incompatibility~~** ✅ **RESOLVED**: Switched from Azure Speech SDK to REST API. Both TTS and STT now work in Docker on any architecture (ARM64/AMD64).
 2. **Authentication**: Currently uses simple JWT, Azure AD B2C integration needed for production
-3. **Scenario Creation**: Currently API-only, no admin UI yet
-5. **Real Clare/Clark Integration**: Placeholder services, need actual API contracts
-6. **Testing**: Test suites prepared but not yet implemented
-7. **Monitoring**: Application Insights configured but needs instrumentation
-8. **Error Boundaries**: Frontend needs React error boundaries
-9. **Rate Limiting**: API needs rate limiting for production
-10. **Data Backup**: Automated backup strategy needed
-11. **GDPR Compliance**: Need data export and deletion workflows
+3. **~~Scenario Creation~~** ✅ **RESOLVED**: Full Admin UI implemented with ScenarioManager, ScenarioEditor, and ClarkImport
+4. **~~Clare/Clark Integration~~** ✅ **RESOLVED**: Both integrations working with mock data fallback when APIs unavailable
+5. **Testing**: Test suites prepared but not yet implemented
+6. **Monitoring**: Application Insights configured but needs instrumentation
+7. **Error Boundaries**: Frontend needs React error boundaries
+8. **Rate Limiting**: API needs rate limiting for production
+9. **Data Backup**: Automated backup strategy needed
+10. **GDPR Compliance**: Need data export and deletion workflows
 
 ---
 
@@ -773,21 +804,24 @@ Coach_AI/
 - [x] WebSocket real-time communication
 - [x] Scenario engine with dialogue logic
 - [x] Assessment engine with scoring
-- [x] Azure Speech integration
+- [x] Azure Speech integration (REST API)
 - [x] Azure OpenAI integration
-- [x] Clark integration (prepared)
-- [x] Clare integration (prepared)
+- [x] Clark integration (fully implemented with mock fallback)
+- [x] Clare integration (fully implemented with mock fallback)
+- [x] Guidelines API endpoint
+- [x] Session history with scenario/assessment details
 
 ### Frontend Features
-- [x] Dashboard with charts
+- [x] Dashboard with charts and Past Cases browser
 - [x] Scenario library with filtering
-- [x] Scenario player with chat interface
+- [x] Scenario player with chat interface and guidelines lookup
 - [x] Assessment results display
 - [x] API client with authentication
 - [x] WebSocket service
 - [x] Audio service
 - [x] Responsive design
 - [x] Medical-themed styling
+- [x] Admin Panel (ScenarioManager, ScenarioEditor, ClarkImport)
 
 ### Deployment
 - [x] Backend Dockerfile
@@ -897,6 +931,93 @@ Switched from Azure Speech SDK to Azure Speech **REST API**. This approach:
 
 ---
 
+## 🛠️ Phase 2 - Admin UI & External Integrations (November 23, 2025)
+
+### Overview
+Implemented comprehensive Admin UI for scenario management and integrated with Clare (guidelines) and Clark (consultations) external services.
+
+### Features Implemented
+
+#### 1. Clare Guidelines Integration
+- **Backend endpoint**: `GET /api/v1/guidelines/search`
+- **Frontend**: Guidelines lookup panel in ScenarioPlayer
+- Students can search for clinical guidelines during diagnosis
+- Clare API: `POST /search` with `X-API-Key` header
+- Mock data fallback when Clare API is unavailable
+
+#### 2. Past Cases Browser
+- **Backend endpoint**: `GET /api/v1/sessions/student/{id}/history`
+- **Frontend component**: `PastCases.tsx` in Dashboard
+- Shows all previous sessions with scenario titles, scores, status
+- Filter by status (all, completed, in_progress, abandoned)
+- Links to view results or continue in-progress sessions
+
+#### 3. Admin Scenario Manager
+- **Route**: `/admin/scenarios`
+- **Features**:
+  - List all scenarios with status filtering (all/draft/published/archived)
+  - Table view with title, specialty, difficulty, status, plays, average score
+  - Actions: Edit, Publish (draft only), Archive (published only), Delete
+
+#### 4. Scenario Editor
+- **Routes**: `/admin/scenarios/new`, `/admin/scenarios/:id/edit`
+- **Multi-tab form**:
+  - **Basic Info**: Title, specialty, difficulty, diagnosis, learning objectives, differentials
+  - **Patient Profile**: Age, gender, occupation, presenting complaint, background, voice settings
+  - **Dialogue**: Initial greeting/opening statement
+  - **Assessment**: Must-ask questions, red flags, key findings, management steps
+- Auto-generates unique scenario_id for new scenarios
+
+#### 5. Clark Import
+- **Route**: `/admin/import`
+- **Backend endpoints**:
+  - `GET /api/v1/clark/consultations` - List available consultations
+  - `GET /api/v1/clark/consultations/{id}/preview` - Preview conversion
+  - `POST /api/v1/clark/consultations/{id}/import` - Import as draft
+- **Features**:
+  - Browse available Clark consultations with filtering
+  - Preview how consultation converts to scenario
+  - Import creates scenario in Draft status for review
+  - Mock data fallback when Clark API is unavailable
+
+#### 6. Scenario Status Workflow
+- **Status states**: Draft → Published → Archived
+- **Transitions**:
+  - `POST /api/v1/scenarios/{id}/publish`: Draft → Published
+  - `POST /api/v1/scenarios/{id}/archive`: Published → Archived
+- **Visibility**: Only published scenarios appear in student Scenario Library
+
+### Files Created/Modified
+
+**New Backend Files:**
+- `backend/app/api/clark.py` - Clark import endpoints
+- `backend/app/api/guidelines.py` - Clare guidelines endpoint
+
+**New Frontend Files:**
+- `frontend/src/components/Admin/ScenarioManager.tsx`
+- `frontend/src/components/Admin/ScenarioEditor.tsx`
+- `frontend/src/components/Admin/ClarkImport.tsx`
+- `frontend/src/components/Dashboard/PastCases.tsx`
+
+**Modified Files:**
+- `backend/app/api/scenarios.py` - Added archive endpoint
+- `backend/app/api/sessions.py` - Added history endpoint
+- `backend/app/main.py` - Added clark and guidelines routers
+- `frontend/src/App.tsx` - Added admin routes
+- `frontend/src/services/api.ts` - Added all new API methods
+- `frontend/src/components/Layout/Header.tsx` - Added Admin nav link
+- `frontend/src/components/ScenarioPlayer/index.tsx` - Added guidelines lookup
+- `frontend/src/components/Dashboard/index.tsx` - Added PastCases component
+
+### Documentation Updates
+All architecture diagrams in `/docs/diagrams/` updated to reflect new features:
+- architecture.md - Admin UI components, Clark API, status workflow
+- data-flow.md - Admin actions, Clark import flow, scenario lifecycle
+- scenario-engine.md - Status management, API endpoints reference
+- README.md - Updated descriptions and recent changes section
+
+---
+
 ## 🎉 Conclusion
 
 Coach AI is a fully functional MVP ready for initial deployment and user testing. The application provides a solid foundation for clinical training with room for extensive future enhancements.
@@ -921,5 +1042,5 @@ Coach AI is a fully functional MVP ready for initial deployment and user testing
 ---
 
 **Documentation maintained by:** Claude (Anthropic)
-**Last updated:** November 22, 2025
-**Version:** 1.0.1 (Phase 1 Complete - Speech Services Fixed)
+**Last updated:** November 23, 2025
+**Version:** 2.0.0 (Phase 2 Complete - Admin UI & External Integrations)
