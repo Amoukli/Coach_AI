@@ -108,6 +108,13 @@ class ApiClient {
     return response.data
   }
 
+  async getStudentSessionHistory(studentId: number, status?: string, skip = 0, limit = 50) {
+    const params: Record<string, string | number> = { skip, limit }
+    if (status) params.status = status
+    const response = await this.client.get(`/sessions/student/${studentId}/history`, { params })
+    return response.data
+  }
+
   async addMessageToSession(sessionId: string, role: string, message: string, audioUrl?: string) {
     const response = await this.client.post(`/sessions/${sessionId}/message`, {
       role,

@@ -4,6 +4,7 @@ import apiClient from '../../services/api'
 import authService from '../../services/auth'
 import SkillsRadar from './SkillsRadar'
 import ProgressChart from './ProgressChart'
+import PastCases from './PastCases'
 
 interface DashboardStats {
   total_scenarios_completed: number
@@ -90,46 +91,8 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Recent Activity */}
-      <div className="card">
-        <div className="card-header">
-          <h2 className="text-xl font-bold">Recent Activity</h2>
-        </div>
-
-        {stats && stats.recent_activity && stats.recent_activity.length > 0 ? (
-          <div className="space-y-4">
-            {stats.recent_activity.map((activity: any, index: number) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-secondary-50 rounded-lg">
-                <div className="flex-1">
-                  <h4 className="font-medium text-secondary-900">{activity.scenario_title}</h4>
-                  <p className="text-sm text-secondary-600">
-                    {new Date(activity.date).toLocaleDateString()} • {Math.floor(activity.duration / 60)} minutes
-                  </p>
-                </div>
-                <div className="flex items-center space-x-4">
-                  {activity.score && (
-                    <span className="badge badge-primary text-lg font-semibold">{activity.score}%</span>
-                  )}
-                  <span
-                    className={`badge ${
-                      activity.status === 'completed' ? 'badge-success' : 'badge-warning'
-                    }`}
-                  >
-                    {activity.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-secondary-600">
-            <p>No recent activity. Start a scenario to begin!</p>
-            <Link to="/scenarios" className="btn btn-primary mt-4 inline-block">
-              Browse Scenarios
-            </Link>
-          </div>
-        )}
-      </div>
+      {/* Past Cases */}
+      <PastCases studentId={user.id} />
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
