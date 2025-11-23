@@ -27,15 +27,23 @@
 
 /* Header - Clark style */
 .landing-header {
-  background: white;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: transparent;
   padding: 1rem 2rem;
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  pointer-events: none;
+  border-bottom: 1px solid var(--border);
 }
 
 /* Login button - Clark style with stroke icon */
 .login-btn {
+  pointer-events: auto;
   width: 40px;
   height: 40px;
   border: none;
@@ -132,13 +140,11 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--coach-olive) 15%,
-    var(--coach-olive) 85%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg,
+      transparent 0%,
+      var(--coach-olive) 15%,
+      var(--coach-olive) 85%,
+      transparent 100%);
 }
 
 .features::after {
@@ -148,13 +154,11 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--coach-olive) 15%,
-    var(--coach-olive) 85%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg,
+      transparent 0%,
+      var(--coach-olive) 15%,
+      var(--coach-olive) 85%,
+      transparent 100%);
 }
 
 .features-content {
@@ -210,6 +214,7 @@
   from {
     transform: translateX(0px);
   }
+
   to {
     transform: translateX(calc(-6 * (320px + 1.5rem)));
   }
