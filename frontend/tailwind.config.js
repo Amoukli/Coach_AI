@@ -7,39 +7,45 @@ export default {
   theme: {
     extend: {
       colors: {
-        // NHS/Medical color palette - professional blues and neutrals
+        // Coach olive green color palette
         primary: {
-          50: '#e6f2ff',
-          100: '#b3d9ff',
-          200: '#80bfff',
-          300: '#4da6ff',
-          400: '#1a8cff',
-          500: '#0073e6',  // Main NHS blue
-          600: '#005cb3',
-          700: '#004580',
-          800: '#002e4d',
-          900: '#00171a',
+          50: '#f4f7e9',
+          100: '#e5edc9',
+          200: '#d0dea3',
+          300: '#b8cd79',
+          400: '#9fbf4f',
+          500: '#669900',  // Main Coach olive green
+          600: '#527a00',
+          700: '#3d5c00',
+          800: '#293d00',
+          900: '#141f00',
         },
         secondary: {
-          50: '#f0f4f8',
-          100: '#d9e2ec',
-          200: '#bcccdc',
+          50: '#f8f9fa',
+          100: '#e9ecef',
+          200: '#e1e8ed',
           300: '#9fb3c8',
           400: '#829ab1',
-          500: '#627d98',
+          500: '#7f8c8d',
           600: '#486581',
           700: '#334e68',
-          800: '#243b53',
+          800: '#2c3e50',
           900: '#102a43',
         },
-        success: '#00703c',  // NHS green
-        warning: '#ffb81c',  // NHS yellow
-        error: '#d5281b',    // NHS red
-        info: '#005eb8',     // NHS bright blue
+        success: '#10b981',
+        warning: '#f59e0b',
+        error: '#ef4444',
+        info: '#3b82f6',
+        // Coach brand colors
+        coach: {
+          olive: '#669900',
+          'olive-light': 'rgba(102, 153, 0, 0.1)',
+          'olive-dark': '#527a00',
+        }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        display: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Schibsted Grotesk', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        display: ['Schibsted Grotesk', 'Inter', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         'soft': '0 2px 8px rgba(0, 0, 0, 0.1)',

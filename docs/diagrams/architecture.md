@@ -6,6 +6,33 @@
 
 Coach AI is a clinical training platform for medical students, integrating with the Clare (guidelines) and Clark (transcription) ecosystem.
 
+## UI Design System
+
+Coach AI uses a Clark-inspired design system for visual consistency across the Clare/Clark/Coach ecosystem.
+
+### Branding
+
+- **Logo**: CoachLogo.svg (SVG vector logo used in Header and Landing page)
+- **Color Theme**: Olive green (#669900) - replaces previous NHS blue palette
+- **Typography**: Schibsted Grotesk (matching Clark design)
+
+### Color Palette
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `primary-500` | #669900 | Main olive green, buttons, active states |
+| `primary-600` | #527a00 | Hover states, darker accents |
+| `primary-50` | #f4f7e9 | Light backgrounds, active nav items |
+| `coach-olive` | #669900 | Brand color alias |
+| `coach-olive-light` | rgba(102,153,0,0.1) | Subtle backgrounds |
+
+### Layout Components
+
+| Component | Description |
+|-----------|-------------|
+| **Header** | Coach SVG logo (left), Navigation links (center), User menu (right) |
+| **Footer** | Clark-style layout - copyright text (left), policy/terms links (right) |
+
 ## High-Level Architecture
 
 ```mermaid
@@ -198,10 +225,49 @@ flowchart TB
 | Layer | Technology |
 |-------|------------|
 | Frontend | React 18, TypeScript, Vite, Tailwind CSS |
+| UI Design | Clark-style CSS, Schibsted Grotesk font, Olive green (#669900) theme |
 | Backend | FastAPI, Python 3.11, SQLAlchemy 2.0 |
 | Database | PostgreSQL 15 |
 | AI | Azure OpenAI (gpt-4o), Azure Speech REST API (TTS/STT via httpx) |
 | Infrastructure | Docker (ARM64/AMD64), Azure App Service, GitHub Actions |
+
+## Frontend Component Architecture
+
+```mermaid
+flowchart TD
+    subgraph Layout["Layout Components"]
+        Header["Header\n(CoachLogo.svg + Nav)"]
+        Footer["Footer\n(Clark-style layout)"]
+    end
+
+    subgraph Pages["Page Components"]
+        Landing["Landing Page\n(CoachLogo.svg hero)"]
+        Dashboard[Dashboard]
+        ScenarioLib[Scenario Library]
+        Player[Scenario Player]
+        Results[Assessment Results]
+    end
+
+    subgraph AdminPages["Admin Pages"]
+        ScenarioManager[Scenario Manager]
+        ScenarioEditor[Scenario Editor]
+        ClarkImport[Clark Import]
+    end
+
+    subgraph Styling["Design System"]
+        Colors["Olive Green Theme\n#669900"]
+        Font["Schibsted Grotesk\nFont Family"]
+        CSS["Clark-style CSS\nLayouts & Components"]
+    end
+
+    Header --> Pages
+    Header --> AdminPages
+    Footer --> Pages
+    Footer --> AdminPages
+    Styling --> Layout
+    Styling --> Pages
+    Styling --> AdminPages
+```
 
 ## Scenario Status Workflow
 

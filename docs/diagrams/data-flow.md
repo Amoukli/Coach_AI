@@ -6,6 +6,14 @@
 
 This document illustrates how data flows through the Coach AI platform.
 
+## UI Design Context
+
+The Coach AI frontend uses a Clark-inspired design system:
+- **Branding**: CoachLogo.svg in Header and Landing page
+- **Color Theme**: Olive green (#669900) primary color
+- **Typography**: Schibsted Grotesk font family
+- **Layout**: Clark-style footer (text left, links right)
+
 ## End-to-End User Journey
 
 ```mermaid

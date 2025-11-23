@@ -1,22 +1,36 @@
-/* Import Inter font from Google Fonts - must be first */
+/* Import fonts - must be first */
+@import url('https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Global styles matching Clare and Clark */
+/* CSS Variables for Coach brand colors - matching landing page */
+:root {
+  --coach-olive: rgb(102, 153, 0);
+  --coach-olive-light: rgba(102, 153, 0, 0.1);
+  --coach-olive-dark: rgb(82, 123, 0);
+  --text-primary: #2c3e50;
+  --text-secondary: #7f8c8d;
+  --background: #ffffff;
+  --background-light: #f8f9fa;
+  --border: #e1e8ed;
+}
+
+/* Global styles matching Clark design */
 @layer base {
   * {
     @apply border-secondary-200;
   }
 
   body {
-    @apply bg-secondary-50 text-secondary-900 font-sans antialiased;
+    @apply bg-white text-secondary-800 font-sans antialiased;
+    font-family: 'Schibsted Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display font-semibold text-secondary-900;
+    @apply font-display font-semibold text-secondary-800;
   }
 
   h1 {
@@ -35,9 +49,15 @@
     @apply text-lg md:text-xl;
   }
 
-  /* Focus styles for accessibility */
+  /* Focus styles for accessibility - olive green */
   *:focus-visible {
     @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+  }
+
+  /* Selection color - olive green */
+  ::selection {
+    background-color: var(--coach-olive-light);
+    color: var(--text-primary);
   }
 }
 

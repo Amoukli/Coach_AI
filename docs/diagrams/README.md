@@ -6,13 +6,19 @@ This directory contains Mermaid diagrams documenting the Coach AI Clinical Train
 
 | Diagram | Description |
 |---------|-------------|
-| [architecture.md](architecture.md) | High-level system architecture, component architecture, database schema, scenario status workflow, and admin workflow |
+| [architecture.md](architecture.md) | High-level system architecture, UI design system, component architecture, database schema, scenario status workflow, and admin workflow |
 | [data-flow.md](data-flow.md) | Data flow through the application including student journey, admin actions, Clark import flow, and scenario lifecycle |
 | [scenario-engine.md](scenario-engine.md) | Scenario and dialogue tree processing, session state management, scenario status management, and API endpoints |
 | [assessment-flow.md](assessment-flow.md) | Assessment scoring and feedback flow |
 
 ## Recent Updates (2025-11-23)
 
+- **UI Design System**: Added Clark-style design documentation
+  - CoachLogo.svg branding in Header and Landing page
+  - Olive green (#669900) color theme (replaces NHS blue)
+  - Schibsted Grotesk typography (matching Clark)
+  - Clark-style footer layout (text left, links right)
+- **Frontend Component Architecture**: New diagram showing layout components and design system
 - **Admin UI Components**: Added diagrams for Scenario Manager, Scenario Editor, and Clark Import components
 - **Scenario Status Workflow**: New state diagram showing Draft -> Published -> Archived lifecycle
 - **Clark Integration**: Added data flow diagrams for importing consultations from Clark API

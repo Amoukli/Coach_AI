@@ -3,31 +3,21 @@ import React from 'react'
 const Footer: React.FC = () => {
   return (
     <footer className="bg-white border-t border-secondary-200 mt-auto">
-      <div className="container-app py-6">
-        <div className="flex flex-col md:flex-row justify-between items-center">
-          <div className="text-sm text-secondary-600 mb-4 md:mb-0">
-            <p>&copy; 2025 Coach AI. Part of the Medical AI Ecosystem.</p>
-            <p className="text-xs mt-1">
-              Integrates with{' '}
-              <a href="https://www.clareai.app" className="text-primary-600 hover:underline">
-                Clare
-              </a>{' '}
-              and{' '}
-              <a href="https://www.clarkai.app" className="text-primary-600 hover:underline">
-                Clark
-              </a>
-            </p>
-          </div>
+      <div className="px-8 py-4">
+        <div className="flex justify-between items-center w-full">
+          <p className="text-xs text-secondary-500">
+            &copy; Coach 2025. All rights reserved. Clinical Training Platform
+          </p>
 
-          <div className="flex space-x-6 text-sm text-secondary-600">
-            <a href="/privacy" className="hover:text-secondary-900">
-              Privacy
+          <div className="flex gap-6">
+            <a href="/privacy" className="text-xs text-secondary-500 hover:text-primary-600 transition-colors">
+              Privacy Policy
             </a>
-            <a href="/terms" className="hover:text-secondary-900">
-              Terms
+            <a href="/terms" className="text-xs text-secondary-500 hover:text-primary-600 transition-colors">
+              Terms of Service
             </a>
-            <a href="/help" className="hover:text-secondary-900">
-              Help
+            <a href="/help" className="text-xs text-secondary-500 hover:text-primary-600 transition-colors">
+              Contact
             </a>
           </div>
         </div>

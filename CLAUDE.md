@@ -32,7 +32,8 @@ Coach AI is a full-stack web application designed to help undergraduate medical 
 **Frontend:**
 - **Framework:** React 18 with TypeScript
 - **Build Tool:** Vite 5.0
-- **Styling:** Tailwind CSS 3.3 with custom medical theme
+- **Styling:** Tailwind CSS 3.3 with Clark-style design system
+- **Design System:** Olive green theme (#669900), Schibsted Grotesk font
 - **Charts:** Recharts for data visualization
 - **State Management:** React hooks + Zustand (prepared)
 - **Routing:** React Router v6
@@ -278,13 +279,16 @@ Coach AI is a full-stack web application designed to help undergraduate medical 
 #### Styling & Design
 
 1. **Tailwind Configuration**
-   - ✅ Custom color palette (NHS-inspired blues)
+   - ✅ Custom color palette (Coach olive green #669900)
    - ✅ Medical-themed colors (success, warning, error)
-   - ✅ Extended font families
+   - ✅ Schibsted Grotesk font family (matching Clark)
    - ✅ Custom box shadows
    - ✅ Responsive breakpoints
 
 2. **Global Styles**
+   - ✅ Clark-style design system throughout app
+   - ✅ CoachLogo.svg in Header and Landing page
+   - ✅ Clark-style footer (text left, links right)
    - ✅ Component classes (btn, card, input, badge)
    - ✅ Form styling
    - ✅ Transcript message styling
@@ -1043,4 +1047,4 @@ Coach AI is a fully functional MVP ready for initial deployment and user testing
 
 **Documentation maintained by:** Claude (Anthropic)
 **Last updated:** November 23, 2025
-**Version:** 2.0.0 (Phase 2 Complete - Admin UI & External Integrations)
+**Version:** 2.1.0 (UI Design System - Clark-style with Olive Green Theme)
