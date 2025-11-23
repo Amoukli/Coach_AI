@@ -1,8 +1,9 @@
 """Clare integration for fetching clinical guidelines"""
 
-from typing import Dict, Any, List, Optional
-import httpx
 import logging
+from typing import Any, Dict, List, Optional
+
+import httpx
 
 from app.core.config import settings
 
@@ -11,131 +12,133 @@ logger = logging.getLogger(__name__)
 
 class ClareIntegrationService:
     """
-    Service to integrate with Clare for fetching clinical guidelines
+    Service to integrate with Clare for fetching clinical guidelines.
+
+    Clare API uses POST /search with X-API-Key header and JSON body {"query": "condition"}
     """
 
     def __init__(self):
-        self.api_url = settings.CLARE_API_URL
+        self.api_url = settings.CLARE_API_URL.rstrip("/")
         self.api_key = settings.CLARE_API_KEY
-        self.headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
+        self.headers = {"X-API-Key": self.api_key, "Content-Type": "application/json"}
 
-    async def fetch_guideline(self, guideline_id: str) -> Optional[Dict[str, Any]]:
+    async def search_guidelines(self, query: str) -> Optional[Dict[str, Any]]:
         """
-        Fetch a specific clinical guideline from Clare
+        Search Clare for guidelines related to a clinical query.
 
         Args:
-            guideline_id: Guideline ID (e.g., CG95, NG185)
+            query: Clinical condition, diagnosis, or question
 
         Returns:
-            Guideline data or None
+            Clare response with answer and sources, or None on error
         """
+        if not self.api_key:
+            logger.warning("CLARE_API_KEY not configured")
+            return None
+
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f"{self.api_url}/guidelines/{guideline_id}",
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    f"{self.api_url}/search",
                     headers=self.headers,
-                    timeout=30.0
+                    json={"query": query},
                 )
 
                 response.raise_for_status()
                 return response.json()
 
+        except httpx.TimeoutException:
+            logger.error(f"Timeout searching Clare for: {query}")
+            return None
+        except httpx.HTTPStatusError as e:
+            logger.error(f"Clare API error {e.response.status_code}: {e.response.text}")
+            return None
         except Exception as e:
-            logger.error(f"Error fetching guideline {guideline_id} from Clare: {e}")
+            logger.error(f"Error searching Clare for {query}: {e}")
             return None
 
-    async def fetch_guidelines_for_condition(
-        self,
-        condition: str
-    ) -> List[Dict[str, Any]]:
+    async def fetch_guidelines_for_condition(self, condition: str) -> List[Dict[str, Any]]:
         """
-        Fetch relevant guidelines for a clinical condition
+        Fetch relevant guidelines for a clinical condition.
 
         Args:
             condition: Clinical condition or diagnosis
 
         Returns:
-            List of relevant guidelines
+            List of guideline sources from Clare
         """
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f"{self.api_url}/guidelines/search",
-                    headers=self.headers,
-                    params={"condition": condition},
-                    timeout=30.0
-                )
+        result = await self.search_guidelines(condition)
 
-                response.raise_for_status()
-                return response.json()
-
-        except Exception as e:
-            logger.error(f"Error searching guidelines for {condition} from Clare: {e}")
+        if not result:
             return []
 
-    async def get_guideline_summary(self, guideline_id: str) -> Optional[str]:
-        """
-        Get a summary of a guideline
-
-        Args:
-            guideline_id: Guideline ID
-
-        Returns:
-            Summary text or None
-        """
-        guideline = await self.fetch_guideline(guideline_id)
-
-        if guideline:
-            return guideline.get("summary", "No summary available")
-
-        return None
+        # Extract sources from Clare response
+        sources = result.get("sources", [])
+        return sources
 
     async def get_guidelines_for_scenario(
-        self,
-        diagnosis: str,
-        specialty: str
+        self, diagnosis: str, specialty: str
     ) -> List[Dict[str, Any]]:
         """
-        Get relevant guidelines for a scenario
+        Get relevant guidelines for a scenario.
 
         Args:
             diagnosis: Primary diagnosis
-            specialty: Medical specialty
+            specialty: Medical specialty (currently unused, Clare handles relevance)
 
         Returns:
-            List of relevant guidelines with metadata
+            List of relevant guidelines with metadata formatted for Coach AI
         """
-        # Fetch guidelines for the diagnosis
-        guidelines = await self.fetch_guidelines_for_condition(diagnosis)
+        result = await self.search_guidelines(diagnosis)
 
-        # Filter by specialty if available
-        if specialty and guidelines:
-            guidelines = [
-                g for g in guidelines
-                if specialty.lower() in g.get("specialties", [])
-            ]
+        if not result:
+            return []
 
-        # Return formatted guideline info
-        return [
-            {
-                "guideline_id": g.get("id"),
-                "title": g.get("title"),
-                "source": g.get("source", "NICE"),
-                "url": g.get("url"),
-                "summary": g.get("summary", "")[:200]  # First 200 chars
-            }
-            for g in guidelines
-        ]
+        sources = result.get("sources", [])
 
-    async def enrich_scenario_with_guidelines(
-        self,
-        scenario: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        # Format guidelines for Coach AI frontend
+        # Deduplicate by guideline title (same guideline may appear multiple times for different chapters)
+        seen_titles = set()
+        guidelines = []
+        for source in sources:
+            title = source.get("title", "Unknown")
+            # Skip duplicates
+            if title in seen_titles:
+                continue
+            seen_titles.add(title)
+
+            guidelines.append(
+                {
+                    "guideline_id": title,
+                    "title": f"{title} - {source.get('chapter', '')}".rstrip(" -"),
+                    "source": source.get("type", "NICE"),
+                    "url": source.get("url"),
+                    "summary": source.get("excerpt", "")[:200],
+                }
+            )
+
+        return guidelines
+
+    async def get_full_answer(self, query: str) -> Optional[str]:
         """
-        Enrich a scenario with relevant clinical guidelines
+        Get Clare's full synthesized answer for a clinical query.
+
+        Args:
+            query: Clinical question or condition
+
+        Returns:
+            Clare's answer text with citations, or None
+        """
+        result = await self.search_guidelines(query)
+
+        if result:
+            return result.get("answer")
+
+        return None
+
+    async def enrich_scenario_with_guidelines(self, scenario: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Enrich a scenario with relevant clinical guidelines.
 
         Args:
             scenario: Scenario data
@@ -144,13 +147,12 @@ class ClareIntegrationService:
             Scenario with added guideline information
         """
         diagnosis = scenario.get("correct_diagnosis", "")
-        specialty = scenario.get("specialty", "")
 
         if diagnosis:
-            guidelines = await self.get_guidelines_for_scenario(diagnosis, specialty)
+            guidelines = await self.get_guidelines_for_scenario(diagnosis, "")
 
             scenario["clare_guidelines"] = [g["guideline_id"] for g in guidelines]
-            scenario["clare_guideline_urls"] = [g["url"] for g in guidelines]
+            scenario["clare_guideline_urls"] = [g["url"] for g in guidelines if g.get("url")]
             scenario["guideline_summaries"] = guidelines
 
         return scenario

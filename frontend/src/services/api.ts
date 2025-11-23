@@ -229,6 +229,19 @@ class ApiClient {
     })
     return response.data
   }
+
+  // Guidelines (Clare Integration)
+  async searchGuidelines(condition: string, specialty?: string) {
+    const response = await this.client.get('/guidelines/search', {
+      params: { condition, specialty },
+    })
+    return response.data
+  }
+
+  async getGuideline(guidelineId: string) {
+    const response = await this.client.get(`/guidelines/${guidelineId}`)
+    return response.data
+  }
 }
 
 // Create singleton instance

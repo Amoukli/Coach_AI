@@ -12,6 +12,14 @@ interface Message {
   audio_url?: string
 }
 
+interface Guideline {
+  guideline_id: string
+  title: string
+  source: string
+  url?: string
+  summary: string
+}
+
 const ScenarioPlayer: React.FC = () => {
   const { scenarioId } = useParams<{ scenarioId: string }>()
   const navigate = useNavigate()
@@ -25,7 +33,10 @@ const ScenarioPlayer: React.FC = () => {
   const [sending, setSending] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const [recordingTime, setRecordingTime] = useState(0)
-  // const [isPlaying, setIsPlaying] = useState(false) // TODO: Implement audio playback
+  const [showGuidelines, setShowGuidelines] = useState(false)
+  const [guidelinesSearch, setGuidelinesSearch] = useState('')
+  const [guidelines, setGuidelines] = useState<Guideline[]>([])
+  const [guidelinesLoading, setGuidelinesLoading] = useState(false)
 
   useEffect(() => {
     initializeScenario()
@@ -214,6 +225,28 @@ const ScenarioPlayer: React.FC = () => {
     }
   }
 
+  const searchGuidelines = async () => {
+    if (!guidelinesSearch.trim()) return
+
+    try {
+      setGuidelinesLoading(true)
+      const result = await apiClient.searchGuidelines(guidelinesSearch, scenario?.specialty)
+      setGuidelines(result.guidelines || [])
+    } catch (error) {
+      console.error('Error searching guidelines:', error)
+      setGuidelines([])
+    } finally {
+      setGuidelinesLoading(false)
+    }
+  }
+
+  const handleGuidelinesKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      searchGuidelines()
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -264,6 +297,84 @@ const ScenarioPlayer: React.FC = () => {
               <span className="badge badge-warning capitalize">{scenario.difficulty}</span>
             </p>
           </div>
+        </div>
+
+        {/* Guidelines Lookup */}
+        <div className="card">
+          <button
+            onClick={() => setShowGuidelines(!showGuidelines)}
+            className="w-full flex items-center justify-between text-left"
+          >
+            <div className="flex items-center space-x-2">
+              <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              <span className="font-semibold">Lookup Guidelines</span>
+            </div>
+            <svg className={`w-5 h-5 transform transition-transform ${showGuidelines ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {showGuidelines && (
+            <div className="mt-4 space-y-3">
+              <p className="text-sm text-secondary-600">
+                Search NICE guidelines for your suspected diagnosis
+              </p>
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  className="input flex-1 text-sm"
+                  placeholder="e.g., appendicitis, chest pain..."
+                  value={guidelinesSearch}
+                  onChange={(e) => setGuidelinesSearch(e.target.value)}
+                  onKeyPress={handleGuidelinesKeyPress}
+                />
+                <button
+                  onClick={searchGuidelines}
+                  disabled={guidelinesLoading || !guidelinesSearch.trim()}
+                  className="btn btn-primary btn-sm"
+                >
+                  {guidelinesLoading ? (
+                    <div className="spinner w-4 h-4"></div>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+
+              {/* Guidelines Results */}
+              {guidelines.length > 0 && (
+                <div className="space-y-2 mt-3">
+                  {guidelines.map((guideline, index) => (
+                    <a
+                      key={index}
+                      href={guideline.url || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-3 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <p className="font-medium text-primary-700 text-sm">{guideline.title}</p>
+                          <p className="text-xs text-secondary-600 mt-1">{guideline.summary}</p>
+                        </div>
+                        <span className="badge badge-primary text-xs ml-2">{guideline.source}</span>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
+
+              {guidelines.length === 0 && guidelinesSearch && !guidelinesLoading && (
+                <p className="text-sm text-secondary-500 text-center py-2">
+                  No guidelines found. Try a different search term.
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <button onClick={completeScenario} className="btn btn-success w-full">
