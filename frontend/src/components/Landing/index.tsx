@@ -13,19 +13,20 @@ const Landing: React.FC = () => {
     <div className="landing-page">
       {/* Header */}
       <header className="landing-header">
-        <button className="control-btn" onClick={handleLogin}>
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M16,17V14H9V10H16V7L21,12L16,17M14,2C14.5,2 15,2.2 15.4,2.6C15.8,3 16,3.5 16,4V6H14V4H5V20H14V18H16V20C16,20.5 15.8,21 15.4,21.4C15,21.8 14.5,22 14,22H5C4.5,22 4,21.8 3.6,21.4C3.2,21 3,20.5 3,20V4C3,3.5 3.2,3 3.6,2.6C4,2.2 4.5,2 5,2H14Z"/>
+        <button className="login-btn" onClick={handleLogin} aria-label="Login">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+            <polyline points="10 17 15 12 10 7" />
+            <line x1="15" y1="12" x2="3" y2="12" />
           </svg>
-          <div className="tooltip">Login</div>
         </button>
       </header>
 
-      {/* Main Content */}
+      {/* Main Content - contains both hero and features like Clark */}
       <main className="landing-main">
         <div className="hero">
           <div className="logo-center">
-            <div className="coach-logo-text">Coach</div>
+            <img src="/images/CoachLogo.svg" alt="Coach" className="hero-logo" />
           </div>
           <h1>Clinical Training Platform</h1>
           <p className="hero-description">
@@ -33,10 +34,9 @@ const Landing: React.FC = () => {
             receive instant feedback, and build confidence before seeing real patients.
           </p>
         </div>
-      </main>
 
-      {/* Features Section */}
-      <section className="features">
+        {/* Features Section - inside main like Clark */}
+        <section className="features">
         <div className="features-content">
           <div className="features-scroll-container">
             <div className="features-scroll-track">
@@ -92,7 +92,8 @@ const Landing: React.FC = () => {
             </div>
           </div>
         </div>
-      </section>
+        </section>
+      </main>
 
       {/* Footer */}
       <footer className="landing-footer">
