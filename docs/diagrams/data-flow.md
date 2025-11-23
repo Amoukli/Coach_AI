@@ -1,6 +1,6 @@
 # Data Flow Diagrams
 
-**Last Updated**: 2025-11-22
+**Last Updated**: 2025-11-23
 
 ## Overview
 
@@ -19,10 +19,20 @@ flowchart TD
         Review[Review Results]
     end
 
+    subgraph Admin["Admin Actions"]
+        AdminLogin[Admin Login]
+        Manage[Manage Scenarios]
+        ImportClark[Import from Clark]
+        EditScenario[Edit Scenario]
+        PublishScenario[Publish Scenario]
+        ArchiveScenario[Archive Scenario]
+    end
+
     subgraph Backend["Backend Processing"]
         Auth[Authentication]
         ScenarioAPI[Scenario API]
         SessionAPI[Session API]
+        ClarkAPI[Clark API]
         Engine[Scenario Engine]
         Assessment[Assessment Engine]
         Analytics[Analytics API]
@@ -43,6 +53,13 @@ flowchart TD
     Submit --> Assessment --> Assessments
     Assessment --> Progress
     Review --> Analytics
+
+    AdminLogin --> Auth
+    Manage --> ScenarioAPI
+    ImportClark --> ClarkAPI --> Scenarios
+    EditScenario --> ScenarioAPI --> Scenarios
+    PublishScenario --> ScenarioAPI
+    ArchiveScenario --> ScenarioAPI
 ```
 
 ## Real-Time Consultation Data Flow
@@ -230,6 +247,7 @@ flowchart TD
         ScenarioEngine[Scenario Engine]
         Guidelines[Guidelines Cache]
         Import[Consultation Import]
+        ClarkAPI["/api/v1/clark"]
     end
 
     subgraph Clare["Clare API"]
@@ -244,12 +262,82 @@ flowchart TD
 
     ClareGuidelines -.->|Fetch| Guidelines
     ClareSearch -.->|Query| ScenarioEngine
-    ClarkConsult -.->|Import| Import
-    ClarkTranscript -.->|Convert| Import
-    Import --> ScenarioEngine
+    ClarkAPI -->|List Consultations| ClarkConsult
+    ClarkAPI -->|Get Transcript| ClarkTranscript
+    ClarkConsult -->|Convert| Import
+    ClarkTranscript -->|Convert| Import
+    Import -->|Draft Scenario| ScenarioEngine
 
     style Clare stroke-dasharray: 5 5
     style Clark stroke-dasharray: 5 5
+```
+
+## Clark Import Data Flow
+
+```mermaid
+sequenceDiagram
+    participant Admin as Admin UI
+    participant API as Clark API
+    participant Clark as Clark Service
+    participant DB as PostgreSQL
+
+    Admin->>API: GET /clark/consultations
+    API->>Clark: Fetch available consultations
+    Clark-->>API: Consultation list
+    API-->>Admin: Display consultations
+
+    Admin->>API: GET /clark/consultations/{id}/preview
+    API->>Clark: Get consultation details
+    Clark-->>API: Consultation data
+    API->>API: Convert to scenario preview
+    API-->>Admin: Preview scenario structure
+
+    Admin->>API: POST /clark/consultations/{id}/import
+    API->>Clark: Get full consultation
+    Clark-->>API: Complete consultation data
+    API->>API: Convert to scenario (Draft status)
+    API->>DB: Create Scenario (status=draft)
+    DB-->>API: Scenario created
+    API-->>Admin: Import result with scenario_id
+```
+
+## Scenario Lifecycle Data Flow
+
+```mermaid
+flowchart TD
+    subgraph Creation["Scenario Creation"]
+        Manual[Manual Creation]
+        ClarkImport[Clark Import]
+    end
+
+    subgraph Status["Status Management"]
+        Draft[Draft Status]
+        Published[Published Status]
+        Archived[Archived Status]
+    end
+
+    subgraph Visibility["Visibility"]
+        AdminOnly[Admin Only]
+        Students[Student Access]
+        Hidden[Hidden from All]
+    end
+
+    subgraph Data["Data Storage"]
+        DB[(PostgreSQL)]
+    end
+
+    Manual --> Draft
+    ClarkImport --> Draft
+    Draft --> Published
+    Published --> Archived
+
+    Draft --> AdminOnly
+    Published --> Students
+    Archived --> Hidden
+
+    Draft --> DB
+    Published --> DB
+    Archived --> DB
 ```
 
 ## Data Model Relationships
@@ -270,6 +358,7 @@ erDiagram
 
     SCENARIO {
         uuid id PK
+        string status
         json dialogue_tree
         json rubric
     }

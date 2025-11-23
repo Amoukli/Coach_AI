@@ -1,6 +1,6 @@
 # Scenario Engine Flow
 
-**Last Updated**: 2025-11-22
+**Last Updated**: 2025-11-23
 
 ## Overview
 
@@ -135,3 +135,70 @@ stateDiagram-v2
     Completed --> [*]
     Abandoned --> [*]
 ```
+
+## Scenario Status Management
+
+Scenarios follow a lifecycle that determines their visibility and availability to students.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft: Create/Import
+    Draft --> Draft: Edit
+    Draft --> Published: POST /scenarios/{id}/publish
+    Published --> Archived: POST /scenarios/{id}/archive
+    Archived --> [*]
+
+    note right of Draft: Admin-only visibility
+    note right of Published: Available to students
+    note right of Archived: Preserved but hidden
+```
+
+## Scenario Creation Sources
+
+```mermaid
+flowchart TD
+    subgraph Sources["Scenario Sources"]
+        Manual[Manual Creation\nScenario Editor]
+        Clark[Clark Import\nConsultation Conversion]
+    end
+
+    subgraph Validation["Validation"]
+        Check[Validate Structure]
+        Review[Admin Review]
+    end
+
+    subgraph Database["Storage"]
+        Draft[(Draft Scenarios)]
+        Published[(Published Scenarios)]
+    end
+
+    subgraph Access["Access Control"]
+        AdminUI[Admin UI]
+        StudentUI[Student Library]
+    end
+
+    Manual --> Check
+    Clark --> Check
+    Check --> Draft
+    Draft --> Review
+    Review --> Published
+
+    Draft --> AdminUI
+    Published --> AdminUI
+    Published --> StudentUI
+```
+
+## API Endpoints for Scenario Management
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/scenarios` | GET | List scenarios (filter by status) |
+| `/api/v1/scenarios` | POST | Create new scenario (Draft status) |
+| `/api/v1/scenarios/{id}` | GET | Get scenario details |
+| `/api/v1/scenarios/{id}` | PUT | Update scenario |
+| `/api/v1/scenarios/{id}` | DELETE | Delete scenario |
+| `/api/v1/scenarios/{id}/publish` | POST | Publish scenario to students |
+| `/api/v1/scenarios/{id}/archive` | POST | Archive scenario |
+| `/api/v1/clark/consultations` | GET | List available Clark consultations |
+| `/api/v1/clark/consultations/{id}/preview` | GET | Preview scenario conversion |
+| `/api/v1/clark/consultations/{id}/import` | POST | Import as Draft scenario |

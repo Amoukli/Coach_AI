@@ -1,6 +1,6 @@
 # Coach AI System Architecture
 
-**Last Updated**: 2025-11-22
+**Last Updated**: 2025-11-23
 
 ## Overview
 
@@ -15,6 +15,11 @@ flowchart TB
         ScenarioLib[Scenario Library]
         Player[Scenario Player]
         Results[Assessment Results]
+        subgraph Admin["Admin UI"]
+            ScenarioManager[Scenario Manager]
+            ScenarioEditor[Scenario Editor]
+            ClarkImport[Clark Import]
+        end
     end
 
     subgraph Backend["Backend (FastAPI)"]
@@ -22,6 +27,7 @@ flowchart TB
         WS[WebSocket Server]
         ScenarioEngine[Scenario Engine]
         AssessmentEngine[Assessment Engine]
+        ClarkAPI[Clark Integration API]
     end
 
     subgraph Services["Azure Services (REST API)"]
@@ -35,7 +41,7 @@ flowchart TB
 
     subgraph Ecosystem["Clare/Clark Ecosystem"]
         Clare[Clare\nClinical Guidelines]
-        Clark[Clark\nConsultation Import]
+        Clark[Clark\nConsultation Export]
     end
 
     Frontend --> API
@@ -49,7 +55,8 @@ flowchart TB
     API --> AzureSpeech
     Backend --> PostgreSQL
     Backend -.-> Clare
-    Backend -.-> Clark
+    ClarkAPI --> Clark
+    ClarkImport --> ClarkAPI
 ```
 
 ## Component Architecture
@@ -62,6 +69,7 @@ flowchart LR
         Assessments["/api/v1/assessments"]
         Voice["/api/v1/voice"]
         Analytics["/api/v1/analytics"]
+        Clark["/api/v1/clark"]
     end
 
     subgraph Services["Service Layer"]
@@ -69,6 +77,7 @@ flowchart LR
         AE[AssessmentEngine]
         FS[FoundryService]
         AS[AzureServices]
+        CS[ClarkIntegration]
     end
 
     subgraph Models["Data Models"]
@@ -85,6 +94,8 @@ flowchart LR
     Voice --> FS
     Voice --> AS
     Analytics --> Models
+    Clark --> CS
+    CS --> Scenario
 
     SE --> FS
     AE --> FS
@@ -112,6 +123,7 @@ erDiagram
         string title
         string specialty
         string difficulty
+        string status
         json dialogue_tree
         json assessment_rubric
     }
@@ -191,7 +203,66 @@ flowchart TB
 | AI | Azure OpenAI (gpt-4o), Azure Speech REST API (TTS/STT via httpx) |
 | Infrastructure | Docker (ARM64/AMD64), Azure App Service, GitHub Actions |
 
+## Scenario Status Workflow
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft: Create Scenario
+    [*] --> Draft: Import from Clark
+    Draft --> Draft: Edit
+    Draft --> Published: Publish
+    Published --> Archived: Archive
+    Archived --> [*]
+
+    note right of Draft: Scenarios in Draft are\nnot visible to students
+    note right of Published: Only Published scenarios\nappear in Scenario Library
+    note right of Archived: Archived scenarios are\npreserved but hidden
+```
+
+## Admin Workflow
+
+```mermaid
+flowchart TD
+    subgraph AdminUI["Admin UI"]
+        Manager[Scenario Manager]
+        Editor[Scenario Editor]
+        Import[Clark Import]
+    end
+
+    subgraph Actions["Admin Actions"]
+        Create[Create New Scenario]
+        Edit[Edit Scenario]
+        Publish[Publish to Students]
+        Archive[Archive Scenario]
+        Delete[Delete Scenario]
+        ImportClark[Import from Clark]
+    end
+
+    subgraph ClarkFlow["Clark Import Flow"]
+        List[List Consultations]
+        Preview[Preview Conversion]
+        Convert[Convert to Draft]
+    end
+
+    Manager --> Create
+    Manager --> Edit
+    Manager --> Publish
+    Manager --> Archive
+    Manager --> Delete
+    Manager --> Import
+
+    Import --> List
+    List --> Preview
+    Preview --> Convert
+    Convert --> Manager
+
+    Create --> Editor
+    Edit --> Editor
+```
+
 ## Key Architecture Notes
 
 - **Azure Speech Services**: Uses REST API directly via httpx instead of the azure-cognitiveservices-speech SDK. This provides cross-platform compatibility (ARM64/AMD64) and works reliably in Docker containers.
 - **WebSocket Integration**: The WebSocket endpoint loads scenarios from the database, creates a ScenarioEngine instance, and generates patient responses via Azure OpenAI. TTS audio is sent as base64-encoded data over the WebSocket connection.
+- **Scenario Status Workflow**: Scenarios follow a Draft -> Published -> Archived lifecycle. Only Published scenarios are visible to students in the Scenario Library.
+- **Clark Integration**: The Clark API (`/api/v1/clark`) enables importing anonymized consultations as Draft scenarios for review before publishing.
