@@ -1,10 +1,10 @@
 # Scenario Engine Flow
 
-**Last Updated**: 2025-11-23
+**Last Updated**: 2025-11-24
 
 ## Overview
 
-The Scenario Engine manages interactive clinical consultations between students and AI-simulated patients.
+The Scenario Engine manages interactive clinical consultations between students and AI-simulated patients. It features a dynamic AI Prompt & Emotion Engine that generates contextually-aware patient responses with real-time emotional expression.
 
 ## Consultation Flow
 
@@ -29,14 +29,17 @@ sequenceDiagram
         FE->>WS: Send {type: student_message, message: ...}
         WS->>SE: process_student_input(message)
         SE->>SE: Analyze Question + Track Topics
-        SE->>AI: generate_patient_response()
-        AI-->>SE: Patient Response Text
-        SE-->>WS: Response + Metadata
-        WS->>Voice: POST SSML to TTS endpoint
+        SE->>AI: generate_patient_response(context, history)
+        Note over AI: Build system prompt with<br/>patient persona + clinical facts
+        AI-->>SE: JSON {text, emotion}
+        SE->>SE: Extract text + emotion from response
+        SE-->>WS: Response + Metadata (includes emotion)
+        WS->>Voice: POST SSML with mstts:express-as style
+        Note over Voice: Emotion maps to voice style<br/>(e.g., fearful -> worried)
         Voice-->>WS: WAV Audio Bytes
         WS->>WS: Base64 Encode Audio
-        WS-->>FE: JSON {message, audio_base64, metadata}
-        FE-->>S: Show Response + Play Audio
+        WS-->>FE: JSON {message, audio_base64, metadata, emotion}
+        FE-->>S: Show Response + Play Audio with emotion
     end
 
     S->>FE: Complete Scenario
@@ -63,22 +66,34 @@ flowchart TD
     Generate[Generate Patient Response]
     Redirect --> Generate
 
-    Generate --> Context[Build Context]
-    Context --> AI[Azure OpenAI]
-    AI --> Response[Patient Response]
-    Response --> Emotion{Emotional State}
+    Generate --> Context[Build Context with Clinical Facts]
+    Context --> AI[Azure OpenAI\nJSON response_format]
+    AI --> JSON[JSON Response\n{text, emotion}]
 
-    Emotion -->|Anxious| AnxiousVoice[style: worried]
-    Emotion -->|Calm| CalmVoice[style: calm]
-    Emotion -->|Distressed| DistressedVoice[style: sad]
+    JSON --> Text[Extract Text]
+    JSON --> Emotion[Extract Emotion]
 
-    AnxiousVoice --> SSML[Build SSML with mstts:express-as]
-    CalmVoice --> SSML
-    DistressedVoice --> SSML
+    Emotion -->|neutral| NeutralVoice[style: general]
+    Emotion -->|cheerful| CheerfulVoice[style: cheerful]
+    Emotion -->|sad| SadVoice[style: sad]
+    Emotion -->|angry| AngryVoice[style: angry]
+    Emotion -->|fearful| FearfulVoice[style: worried]
+    Emotion -->|terrified| TerrifiedVoice[style: worried]
+    Emotion -->|hopeful| HopefulVoice[style: hopeful]
+
+    NeutralVoice --> SSML[Build SSML with mstts:express-as]
+    CheerfulVoice --> SSML
+    SadVoice --> SSML
+    AngryVoice --> SSML
+    FearfulVoice --> SSML
+    TerrifiedVoice --> SSML
+    HopefulVoice --> SSML
 
     SSML --> Speech[Azure Speech REST API\nPOST via httpx]
     Speech --> Audio[WAV Audio Bytes]
     Audio --> Base64[Base64 Encode]
+
+    Text --> Output
     Base64 --> Output([Response + Audio via WebSocket])
 ```
 
@@ -122,6 +137,111 @@ flowchart LR
 | Family History | Hereditary conditions | Low |
 | Systems Review | Other symptoms | Medium |
 | Red Flags | Concerning symptoms | Critical |
+
+## AI Prompt & Emotion Engine
+
+The AI Prompt Engine builds comprehensive system prompts that enable realistic patient simulation with dynamic emotional responses.
+
+### Clinical Knowledge Base Extraction
+
+```mermaid
+flowchart TD
+    subgraph Input["Scenario Data"]
+        DialogueTree[dialogue_tree JSON]
+        PatientProfile[patient_profile]
+    end
+
+    subgraph Extraction["_extract_all_clinical_facts()"]
+        Traverse[Recursive Tree Traversal]
+        FindNodes[Find nodes with patient_says]
+        ExtractFacts[Extract response text]
+        BuildList[Build fact bullet points]
+    end
+
+    subgraph Output["Clinical Facts"]
+        FactList["- **Topic**: Response text<br/>- **Topic**: Response text<br/>..."]
+    end
+
+    DialogueTree --> Traverse
+    Traverse --> FindNodes
+    FindNodes --> ExtractFacts
+    ExtractFacts --> BuildList
+    BuildList --> FactList
+    PatientProfile --> SystemPrompt
+    FactList --> SystemPrompt[System Prompt]
+```
+
+### System Prompt Structure
+
+```mermaid
+flowchart LR
+    subgraph Persona["Patient Persona"]
+        Name[Name]
+        Age[Age]
+        Gender[Gender]
+        Occupation[Occupation]
+        Complaint[Presenting Complaint]
+        BaseEmotion[Base Emotional State]
+    end
+
+    subgraph Knowledge["Clinical Knowledge Base"]
+        Facts[Extracted Clinical Facts]
+        Symptoms[Symptoms & History]
+        Responses[Predefined Responses]
+    end
+
+    subgraph Guidelines["Interaction Guidelines"]
+        InCharacter[Stay in character]
+        Layperson[Use layperson language]
+        NoVolunteer[Do not volunteer history]
+        DenyUnknown[Deny unknown symptoms]
+    end
+
+    subgraph Format["Output Format"]
+        JSON[JSON Response Required]
+        TextField[text: spoken response]
+        EmotionField[emotion: emotional tone]
+    end
+
+    Persona --> Prompt[System Prompt]
+    Knowledge --> Prompt
+    Guidelines --> Prompt
+    Format --> Prompt
+```
+
+### Emotion System
+
+The AI dynamically selects an emotion for each response based on the conversation context.
+
+| Emotion | Description | Azure Voice Style |
+|---------|-------------|-------------------|
+| `neutral` | Normal, calm state | `general` |
+| `cheerful` | Happy, positive | `cheerful` |
+| `sad` | Unhappy, down | `sad` |
+| `angry` | Frustrated, upset | `angry` |
+| `fearful` | Worried, anxious | `worried` |
+| `terrified` | Extreme fear | `worried` |
+| `hopeful` | Optimistic | `hopeful` |
+| `shouting` | Loud, urgent | `shouting` |
+| `whispering` | Quiet, secretive | `whispering` |
+| `unfriendly` | Cold, distant | `unfriendly` |
+
+### JSON Response Format
+
+The AI is configured to output JSON using `response_format={"type": "json_object"}`:
+
+```json
+{
+  "text": "It hurts so much when I breathe!",
+  "emotion": "terrified"
+}
+```
+
+The `emotion` field is:
+1. Extracted by `ScenarioEngine.process_student_input()`
+2. Stored in conversation history
+3. Passed to Azure Speech Services for voice styling
+4. Returned to frontend in response metadata
 
 ## Session State Management
 

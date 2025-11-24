@@ -1,6 +1,6 @@
 # Data Flow Diagrams
 
-**Last Updated**: 2025-11-23
+**Last Updated**: 2025-11-24
 
 ## Overview
 
@@ -90,12 +90,15 @@ sequenceDiagram
         Client->>WS: Student Message (type: student_message)
         WS->>Engine: process_student_input()
         Engine->>AI: Generate Patient Response
-        AI-->>Engine: Patient Response Text
-        Engine-->>WS: Response + Metadata
-        WS->>Speech: POST /cognitiveservices/v1 (SSML)
+        Note over AI: Build system prompt with<br/>persona + clinical facts
+        AI-->>Engine: JSON {text, emotion}
+        Engine->>Engine: Extract text + emotion
+        Engine-->>WS: Response + Metadata + Emotion
+        WS->>Speech: POST SSML with mstts:express-as style
+        Note over Speech: Emotion mapped to voice style<br/>(e.g., fearful -> worried)
         Speech-->>WS: Audio WAV bytes
         WS->>WS: base64 encode audio
-        WS-->>Client: JSON {message, audio_base64, metadata}
+        WS-->>Client: JSON {message, audio_base64, metadata, emotion}
     end
 
     Client->>WS: Disconnect
@@ -108,14 +111,25 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-    subgraph Input["Text Input"]
-        Response[Patient Response]
-        Profile[Voice Profile]
-        Emotion[Emotional State]
+    subgraph Input["Input Data"]
+        Response[Patient Response Text]
+        Profile[Voice Profile\nAccent + Gender]
+        Emotion[Dynamic Emotion\nfrom AI Response]
+    end
+
+    subgraph EmotionMapping["Emotion to Style Mapping"]
+        Map{Map Emotion}
+        Map -->|neutral| General[general]
+        Map -->|cheerful| Cheerful[cheerful]
+        Map -->|sad| Sad[sad]
+        Map -->|angry| Angry[angry]
+        Map -->|fearful| Worried[worried]
+        Map -->|terrified| Worried2[worried]
+        Map -->|hopeful| Hopeful[hopeful]
     end
 
     subgraph Processing["Azure Speech REST API"]
-        SSML[Build SSML with mstts:express-as]
+        SSML[Build SSML with\nmstts:express-as style]
         HTTP[POST via httpx\nto tts.speech.microsoft.com]
         Neural[Neural Voice Processing]
     end
@@ -128,7 +142,14 @@ flowchart LR
 
     Response --> SSML
     Profile --> SSML
-    Emotion --> SSML
+    Emotion --> Map
+    General --> SSML
+    Cheerful --> SSML
+    Sad --> SSML
+    Angry --> SSML
+    Worried --> SSML
+    Worried2 --> SSML
+    Hopeful --> SSML
     SSML --> HTTP
     HTTP --> Neural
     Neural --> Audio
@@ -278,6 +299,93 @@ flowchart TD
 
     style Clare stroke-dasharray: 5 5
     style Clark stroke-dasharray: 5 5
+```
+
+## AI Prompt & Emotion Data Flow
+
+This section details how clinical knowledge is extracted and how emotions flow through the system.
+
+### Clinical Knowledge Extraction
+
+```mermaid
+flowchart TD
+    subgraph Scenario["Scenario Data (PostgreSQL)"]
+        DT[dialogue_tree JSON]
+        PP[patient_profile]
+    end
+
+    subgraph Extraction["Clinical Facts Extraction"]
+        Traverse["_extract_all_clinical_facts()"]
+        Recursive[Recursive Tree Traversal]
+        FindPatientSays[Find all patient_says nodes]
+        BuildFacts[Build bullet point list]
+    end
+
+    subgraph PromptBuild["System Prompt Construction"]
+        Persona[Patient Persona Section]
+        Knowledge[Clinical Knowledge Base Section]
+        Guidelines[Interaction Guidelines Section]
+        OutputFormat[JSON Output Format Section]
+    end
+
+    subgraph FinalPrompt["Complete System Prompt"]
+        SystemPrompt[System Prompt for Azure OpenAI]
+    end
+
+    DT --> Traverse
+    Traverse --> Recursive
+    Recursive --> FindPatientSays
+    FindPatientSays --> BuildFacts
+    BuildFacts --> Knowledge
+
+    PP --> Persona
+    Persona --> SystemPrompt
+    Knowledge --> SystemPrompt
+    Guidelines --> SystemPrompt
+    OutputFormat --> SystemPrompt
+```
+
+### Emotion Flow Through System
+
+```mermaid
+sequenceDiagram
+    participant AI as Azure OpenAI
+    participant SE as ScenarioEngine
+    participant WS as WebSocket
+    participant AS as Azure Speech
+    participant FE as Frontend
+
+    AI->>SE: JSON {text: "...", emotion: "fearful"}
+    SE->>SE: Parse JSON response
+    SE->>SE: Store emotion in conversation_history
+    SE->>WS: Return (text, metadata with emotion)
+    WS->>AS: Build SSML with style="worried"
+    Note over AS: emotion "fearful" maps to style "worried"
+    AS-->>WS: Audio with emotional expression
+    WS->>FE: {message, audio_base64, emotion: "fearful"}
+    FE->>FE: Display response with emotion context
+```
+
+### Emotion Storage in Conversation History
+
+```mermaid
+flowchart LR
+    subgraph ConversationHistory["conversation_history[]"]
+        Msg1["{ role: 'student',<br/>content: 'Where is the pain?' }"]
+        Msg2["{ role: 'patient',<br/>content: 'In my chest...',<br/>emotion: 'fearful' }"]
+        Msg3["{ role: 'student',<br/>content: 'How severe?' }"]
+        Msg4["{ role: 'patient',<br/>content: 'It hurts so much!',<br/>emotion: 'terrified' }"]
+    end
+
+    subgraph Usage["Emotion Usage"]
+        VoiceStyle[Azure Speech voice styling]
+        Metadata[Response metadata to frontend]
+        Assessment[Available for assessment analysis]
+    end
+
+    ConversationHistory --> VoiceStyle
+    ConversationHistory --> Metadata
+    ConversationHistory --> Assessment
 ```
 
 ## Clark Import Data Flow

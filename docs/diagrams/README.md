@@ -6,12 +6,26 @@ This directory contains Mermaid diagrams documenting the Coach AI Clinical Train
 
 | Diagram | Description |
 |---------|-------------|
-| [architecture.md](architecture.md) | High-level system architecture, UI design system, component architecture, database schema, scenario status workflow, and admin workflow |
-| [data-flow.md](data-flow.md) | Data flow through the application including student journey, admin actions, Clark import flow, and scenario lifecycle |
-| [scenario-engine.md](scenario-engine.md) | Scenario and dialogue tree processing, session state management, scenario status management, and API endpoints |
-| [assessment-flow.md](assessment-flow.md) | Assessment scoring and feedback flow |
+| [architecture.md](architecture.md) | High-level system architecture, UI design system, component architecture, database schema, scenario status workflow, admin workflow, and AI Prompt & Emotion Engine |
+| [data-flow.md](data-flow.md) | Data flow through the application including student journey, admin actions, Clark import flow, scenario lifecycle, and AI prompt/emotion data flows |
+| [scenario-engine.md](scenario-engine.md) | Scenario and dialogue tree processing, AI Prompt & Emotion Engine, clinical knowledge extraction, emotion system, session state management, and API endpoints |
+| [assessment-flow.md](assessment-flow.md) | Assessment scoring and feedback flow with notes on emotion data availability |
 
-## Recent Updates (2025-11-23)
+## Recent Updates (2025-11-24)
+
+- **AI Prompt & Emotion Engine**: Major new documentation for the dynamic patient simulation system
+  - Clinical Knowledge Base extraction from dialogue trees (`_extract_all_clinical_facts()`)
+  - Persona-based system prompts with patient profile details
+  - Dynamic emotion tagging in AI responses (JSON format: `{text, emotion}`)
+  - Emotion-to-voice-style mapping for Azure Speech Services
+  - Supported emotions: neutral, cheerful, sad, angry, fearful, terrified, hopeful, shouting, whispering, unfriendly
+- **Updated Diagrams**:
+  - `scenario-engine.md`: New AI Prompt & Emotion Engine section with clinical facts extraction flow
+  - `architecture.md`: Added Prompt Engine component and emotion flow diagram
+  - `data-flow.md`: New AI Prompt & Emotion Data Flow section with emotion storage diagrams
+  - `assessment-flow.md`: Added note about emotion data availability for future assessment enhancements
+
+### Previous Updates (2025-11-23)
 
 - **UI Design System**: Added Clark-style design documentation
   - CoachLogo.svg branding in Header and Landing page

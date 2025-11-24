@@ -1,6 +1,6 @@
 # Coach AI System Architecture
 
-**Last Updated**: 2025-11-23
+**Last Updated**: 2025-11-24
 
 ## Overview
 
@@ -103,8 +103,9 @@ flowchart LR
         SE[ScenarioEngine]
         AE[AssessmentEngine]
         FS[FoundryService]
-        AS[AzureServices]
+        AS[AzureServices\nTTS + STT + OpenAI]
         CS[ClarkIntegration]
+        PE[PromptEngine\nEmotion + Clinical Facts]
     end
 
     subgraph Models["Data Models"]
@@ -125,7 +126,9 @@ flowchart LR
     CS --> Scenario
 
     SE --> FS
+    SE --> PE
     AE --> FS
+    PE --> AS
 ```
 
 ## Database Schema
@@ -332,3 +335,66 @@ flowchart TD
 - **WebSocket Integration**: The WebSocket endpoint loads scenarios from the database, creates a ScenarioEngine instance, and generates patient responses via Azure OpenAI. TTS audio is sent as base64-encoded data over the WebSocket connection.
 - **Scenario Status Workflow**: Scenarios follow a Draft -> Published -> Archived lifecycle. Only Published scenarios are visible to students in the Scenario Library.
 - **Clark Integration**: The Clark API (`/api/v1/clark`) enables importing anonymized consultations as Draft scenarios for review before publishing.
+- **AI Prompt & Emotion Engine**: The system builds comprehensive patient personas with clinical knowledge extracted from the entire dialogue tree. AI responses include dynamic emotion tags that map to Azure Speech voice styles.
+
+## AI Prompt & Emotion Engine
+
+The AI subsystem provides realistic patient simulation with dynamic emotional responses.
+
+```mermaid
+flowchart TD
+    subgraph ScenarioData["Scenario Data"]
+        PatientProfile[patient_profile]
+        DialogueTree[dialogue_tree]
+    end
+
+    subgraph PromptEngine["Prompt Engine (azure_services.py)"]
+        ExtractFacts["_extract_all_clinical_facts()\nRecursive tree traversal"]
+        BuildPrompt["_build_system_prompt()\nPersona + Knowledge + Guidelines"]
+    end
+
+    subgraph AIGeneration["AI Response Generation"]
+        OpenAI[Azure OpenAI\ngpt-4o]
+        JSONFormat["response_format:\njson_object"]
+    end
+
+    subgraph Response["Response Processing"]
+        ParseJSON[Parse JSON Response]
+        ExtractText[Extract text field]
+        ExtractEmotion[Extract emotion field]
+    end
+
+    subgraph VoiceSynthesis["Voice Synthesis"]
+        MapEmotion[Map emotion to voice style]
+        BuildSSML[Build SSML with mstts:express-as]
+        SpeechAPI[Azure Speech REST API]
+    end
+
+    PatientProfile --> BuildPrompt
+    DialogueTree --> ExtractFacts
+    ExtractFacts --> BuildPrompt
+    BuildPrompt --> OpenAI
+    JSONFormat --> OpenAI
+    OpenAI --> ParseJSON
+    ParseJSON --> ExtractText
+    ParseJSON --> ExtractEmotion
+    ExtractEmotion --> MapEmotion
+    ExtractText --> BuildSSML
+    MapEmotion --> BuildSSML
+    BuildSSML --> SpeechAPI
+```
+
+### Supported Emotions
+
+| Emotion | Azure Voice Style | Use Case |
+|---------|-------------------|----------|
+| `neutral` | `general` | Normal conversation |
+| `cheerful` | `cheerful` | Good news, positive updates |
+| `sad` | `sad` | Disappointment, bad news |
+| `angry` | `angry` | Frustration, upset |
+| `fearful` | `worried` | Anxiety about symptoms |
+| `terrified` | `worried` | Severe fear, panic |
+| `hopeful` | `hopeful` | Optimism about treatment |
+| `shouting` | `shouting` | Urgency, distress |
+| `whispering` | `whispering` | Confidential information |
+| `unfriendly` | `unfriendly` | Uncooperative patient |

@@ -1,7 +1,7 @@
 """Scenario dialogue engine"""
 
-from typing import Dict, List, Any, Optional, Tuple
 import logging
+from typing import Any, Dict, List, Optional, Tuple
 
 from app.core.azure_services import azure_openai_service
 
@@ -41,9 +41,7 @@ class ScenarioEngine:
         return root_node.get("patient_says", "Hello, doctor.")
 
     async def process_student_input(
-        self,
-        student_message: str,
-        session_context: Optional[Dict[str, Any]] = None
+        self, student_message: str, session_context: Optional[Dict[str, Any]] = None
     ) -> Tuple[str, Dict[str, Any]]:
         """
         Process student input and generate appropriate patient response
@@ -75,20 +73,25 @@ class ScenarioEngine:
             self.relevant_questions += 1
 
         # Get patient response using AI
-        patient_response = await self._generate_patient_response(
-            student_message,
-            analysis
-        )
+        response_data = await self._generate_patient_response(student_message, analysis)
+
+        # Handle both string (legacy/fallback) and dict (new) responses
+        if isinstance(response_data, dict):
+            patient_text = response_data.get("text", "")
+            emotion = response_data.get("emotion", "neutral")
+        else:
+            patient_text = str(response_data)
+            emotion = "neutral"
 
         # Add to conversation history
-        self.conversation_history.append({
-            "role": "student",
-            "content": student_message
-        })
-        self.conversation_history.append({
-            "role": "patient",
-            "content": patient_response
-        })
+        self.conversation_history.append({"role": "student", "content": student_message})
+        self.conversation_history.append(
+            {
+                "role": "patient",
+                "content": patient_text,
+                "emotion": emotion,  # Store emotion in history
+            }
+        )
 
         # Prepare metadata
         metadata = {
@@ -96,10 +99,11 @@ class ScenarioEngine:
             "red_flags_identified": self.red_flags_identified,
             "questions_asked": self.questions_asked,
             "relevant_questions": self.relevant_questions,
-            "analysis": analysis
+            "analysis": analysis,
+            "emotion": emotion,  # Pass emotion to frontend
         }
 
-        return patient_response, metadata
+        return patient_text, metadata
 
     def _analyze_student_input(self, student_message: str) -> Dict[str, Any]:
         """
@@ -130,7 +134,7 @@ class ScenarioEngine:
             "medications": ["medication", "tablets", "drugs", "taking"],
             "allergies": ["allergies", "allergic", "allergy"],
             "social_history": ["smoke", "alcohol", "drink", "occupation", "job"],
-            "family_history": ["family", "mother", "father", "siblings"]
+            "family_history": ["family", "mother", "father", "siblings"],
         }
 
         for topic, keywords in topic_keywords.items():
@@ -144,7 +148,7 @@ class ScenarioEngine:
             "radiation_to_arm": ["arm", "jaw", "shoulder"],
             "sweating": ["sweating", "clammy", "perspiring"],
             "breathlessness": ["breathless", "breath", "breathing"],
-            "duration_over_15min": ["hour", "hours"]
+            "duration_over_15min": ["hour", "hours"],
         }
 
         for red_flag, keywords in red_flag_keywords.items():
@@ -158,14 +162,12 @@ class ScenarioEngine:
             "topics": topics_found,
             "red_flags": red_flags,
             "is_relevant": is_relevant,
-            "expected_topics_covered": len(set(topics_found) & set(expected_topics))
+            "expected_topics_covered": len(set(topics_found) & set(expected_topics)),
         }
 
     async def _generate_patient_response(
-        self,
-        student_message: str,
-        analysis: Dict[str, Any]
-    ) -> str:
+        self, student_message: str, analysis: Dict[str, Any]
+    ) -> Any:  # Returns Dict[str, str] or str (fallback)
         """
         Generate contextual patient response using Azure OpenAI
 
@@ -180,7 +182,7 @@ class ScenarioEngine:
             response = await azure_openai_service.generate_patient_response(
                 scenario_context=self.scenario,
                 student_message=student_message,
-                conversation_history=self.conversation_history[-6:]  # Last 3 exchanges
+                conversation_history=self.conversation_history[-6:],  # Last 3 exchanges
             )
 
             return response
@@ -206,7 +208,6 @@ class ScenarioEngine:
 
         # Calculate red flag identification
         expected_red_flags = rubric.get("red_flags", [])
-        red_flags_caught = len(set(self.red_flags_identified) & set(expected_red_flags))
         red_flags_missed = len(set(expected_red_flags) - set(self.red_flags_identified))
 
         return {
@@ -218,7 +219,8 @@ class ScenarioEngine:
             "relevant_questions": self.relevant_questions,
             "relevance_percentage": (
                 self.relevant_questions / self.questions_asked * 100
-                if self.questions_asked > 0 else 0
+                if self.questions_asked > 0
+                else 0
             ),
-            "conversation_history": self.conversation_history
+            "conversation_history": self.conversation_history,
         }

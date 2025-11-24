@@ -221,23 +221,27 @@ class AzureOpenAIService:
         scenario_context: Dict[str, Any],
         student_message: str,
         conversation_history: List[Dict[str, str]],
-    ) -> str:
+    ) -> Dict[str, str]:
         """
         Generate contextual patient response using GPT-4
 
-        Args:
-            scenario_context: Current scenario and patient information
-            student_message: What the student just said/asked
-            conversation_history: Previous conversation messages
-
         Returns:
-            Patient's response text
+            Dict with 'text' and 'emotion' keys
         """
         system_prompt = self._build_system_prompt(scenario_context)
         messages = [{"role": "system", "content": system_prompt}]
 
         # Add conversation history
-        messages.extend(conversation_history[-6:])  # Last 6 messages for context
+        # Filter out non-string content from history if needed, or ensure history is clean
+        clean_history = []
+        for msg in conversation_history[-6:]:
+            content = msg.get("content")
+            # If content is a dict (from previous turns), extract text
+            if isinstance(content, dict):
+                content = content.get("text", "")
+            clean_history.append({"role": msg["role"], "content": content})
+
+        messages.extend(clean_history)
 
         # Add current student message
         messages.append({"role": "user", "content": student_message})
@@ -247,17 +251,27 @@ class AzureOpenAIService:
         response = await loop.run_in_executor(
             None,
             lambda: self.client.chat.completions.create(
-                model=self.deployment_name, messages=messages, temperature=0.7, max_tokens=200
+                model=self.deployment_name,
+                messages=messages,
+                temperature=0.7,
+                max_tokens=200,
+                response_format={"type": "json_object"},  # Force JSON output
             ),
         )
 
-        return response.choices[0].message.content
+        content = response.choices[0].message.content
+        try:
+            import json
+
+            return json.loads(content)
+        except json.JSONDecodeError:
+            # Fallback if JSON parsing fails
+            return {"text": content, "emotion": "neutral"}
 
     def _build_system_prompt(self, scenario_context: Dict[str, Any]) -> str:
         """Build system prompt for patient role-play"""
         patient = scenario_context.get("patient_profile", {})
         dialogue_tree = scenario_context.get("dialogue_tree", {})
-        # Note: assessment_rubric available for future prompt enhancements
 
         # Extract patient details
         patient_name = patient.get("name", "the patient")
@@ -265,69 +279,86 @@ class AzureOpenAIService:
         gender = patient.get("gender", "unknown")
         presenting_complaint = patient.get("presenting_complaint", "unknown")
         emotional_state = patient.get("voice_profile", {}).get("emotional_state", "neutral")
+        occupation = patient.get("occupation", "unknown")
 
-        # Build symptom details from dialogue tree branches
-        symptom_details = self._extract_symptom_details(dialogue_tree)
+        # Extract all clinical facts recursively
+        clinical_facts = self._extract_all_clinical_facts(dialogue_tree)
 
         # Build the comprehensive prompt
-        prompt = f"""You are roleplaying as {patient_name}, a {age}-year-old {gender} patient in a medical training scenario.
+        prompt = f"""# Role: Virtual Patient Simulation
+You are {patient_name}, a {age}-year-old {gender} patient in a clinical training scenario for medical students.
 
-## Your Presenting Complaint
-You came to see the doctor because: "{presenting_complaint}"
+## Patient Profile
+- **Name:** {patient_name}
+- **Age:** {age}
+- **Gender:** {gender}
+- **Occupation:** {occupation}
+- **Presenting Complaint:** "{presenting_complaint}"
+- **Base Emotional State:** {emotional_state}
 
-## Your Current Emotional State
-You are feeling {emotional_state}. Reflect this in your tone and responses.
+## Clinical Knowledge Base
+Here are the specific facts about your condition. You MUST adhere to these facts if asked.
+{clinical_facts}
 
-## Your Symptoms and Medical History
-When asked about specific topics, provide these details:
-{symptom_details}
+## Interaction Guidelines
+1. **Stay in Character:** You are a patient, not a doctor. Use layperson language.
+2. **Natural Conversation:** Respond naturally to the student's questions.
+3. **Information Disclosure:** Do not volunteer your entire history at once. Answer direct questions fully based on your Knowledge Base.
+4. **Unknowns:** If asked a medical question you wouldn't know, say you don't know.
 
-## How to Respond
-1. **Stay in character** as {patient_name} throughout the conversation
-2. **Only reveal information when asked** - don't volunteer details the doctor hasn't asked about
-3. **Use natural, everyday language** - avoid medical terms (say "tummy" not "abdomen", "sick" not "nauseous")
-4. **Keep responses concise** - 1-3 sentences maximum
-5. **Show your emotions** - you're {emotional_state}, so express appropriate concern, discomfort, or anxiety
-6. **Be consistent** - if you said the pain started yesterday, stick to that timeline
-7. **Answer directly** - if asked "where does it hurt?", describe the location clearly
+## Output Format
+You MUST respond in JSON format with two fields:
+1. `text`: Your spoken response to the student.
+2. `emotion`: The emotional tone of this specific response. Choose from: [neutral, cheerful, sad, angry, fearful, shouting, whispering, hopeful, terrified, unfriendly].
 
-## Important Guidelines
-- If the doctor asks something not covered above, give a reasonable response consistent with your character
-- If you genuinely wouldn't know something (like a specific medical term), say you're not sure
-- React naturally to the doctor's manner - if they're reassuring, you can relax slightly
-- You can ask questions back like "Is it serious, doctor?" or "What do you think it might be?"
-
-Remember: This is a training scenario to help medical students learn. Be realistic and educational."""
-
+Example:
+{{
+  "text": "It hurts so much when I breathe!",
+  "emotion": "terrified"
+}}
+"""
         return prompt
 
-    def _extract_symptom_details(self, dialogue_tree: Dict[str, Any]) -> str:
-        """Extract symptom details from dialogue tree for the prompt"""
-        if not dialogue_tree:
-            return "No specific symptom details available."
+    def _extract_all_clinical_facts(self, dialogue_tree: Dict[str, Any]) -> str:
+        """
+        Recursively extract all clinical facts from the dialogue tree.
+        Returns a formatted string of bullet points.
+        """
+        facts = []
 
-        root = dialogue_tree.get("root", {})
-        branches = root.get("branches", {})
+        def traverse(node_data: Any):
+            if isinstance(node_data, dict):
+                # Check if this is a node with 'patient_says'
+                if "patient_says" in node_data:
+                    response = node_data["patient_says"]
+                    # Try to find a topic label
+                    topic = node_data.get("id", "General")
 
-        if not branches:
-            return "No specific symptom details available."
+                    # Avoid duplicates if possible
+                    fact_str = f"- **{topic}**: {response}"
+                    if fact_str not in facts:
+                        facts.append(fact_str)
 
-        details = []
-        for topic, branch_data in branches.items():
-            if isinstance(branch_data, dict) and "patient_says" in branch_data:
-                # Format the topic name nicely
-                topic_name = topic.replace("_", " ").title()
-                response = branch_data["patient_says"]
-                triggers = branch_data.get("triggers", [])
+                # Recurse into all values
+                for key, value in node_data.items():
+                    if key == "branches" and isinstance(value, dict):
+                        # Handle branches specifically to capture topic keys
+                        for topic_key, branch_node in value.items():
+                            # Add the topic key as context if useful
+                            traverse(branch_node)
+                    elif isinstance(value, (dict, list)):
+                        traverse(value)
 
-                # Add trigger words as context
-                trigger_hint = f" (if asked about: {', '.join(triggers[:3])})" if triggers else ""
-                details.append(f'- **{topic_name}**{trigger_hint}: "{response}"')
+            elif isinstance(node_data, list):
+                for item in node_data:
+                    traverse(item)
 
-        if not details:
-            return "No specific symptom details available."
+        traverse(dialogue_tree)
 
-        return "\n".join(details)
+        if not facts:
+            return "No specific clinical facts provided. Improvisation allowed for all history."
+
+        return "\n".join(facts)
 
 
 # Create singleton instances

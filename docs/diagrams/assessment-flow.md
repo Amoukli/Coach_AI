@@ -1,6 +1,6 @@
 # Assessment Engine Flow
 
-**Last Updated**: 2025-11-23
+**Last Updated**: 2025-11-24
 
 ## Overview
 
@@ -133,6 +133,8 @@ flowchart LR
 | Empathy | 40% | Patient-centered language |
 | Clarity | 35% | Clear questions |
 | Professional Tone | 25% | Appropriate language |
+
+**Note**: The conversation history now includes emotion data from patient responses (e.g., `fearful`, `terrified`, `sad`). This emotion data can be used for future enhancements to assess how students respond to emotionally distressed patients.
 
 ### Efficiency (10%)
 

@@ -1022,6 +1022,34 @@ All architecture diagrams in `/docs/diagrams/` updated to reflect new features:
 
 ---
 
+## 🎭 AI Prompt & Emotion Engine (November 24, 2025)
+
+### Overview
+Significantly enhanced the AI patient's realism by implementing a dynamic prompt engine and real-time emotion tagging.
+
+### Features Implemented
+
+#### 1. Dynamic Emotion Tagging
+- **Mechanism**: AI now outputs JSON responses containing both `text` and `emotion`.
+- **Emotions Supported**: `neutral`, `cheerful`, `sad`, `angry`, `fearful`, `shouting`, `whispering`, `hopeful`, `terrified`, `unfriendly`.
+- **Integration**: The `emotion` tag is passed to Azure Speech Services to dynamically adjust the voice style (e.g., using `mstts:express-as style="worried"`).
+
+#### 2. Comprehensive Clinical Knowledge Base
+- **Problem**: Previous prompt only knew about the "root" of the dialogue tree.
+- **Solution**: Implemented recursive extraction (`_extract_all_clinical_facts`) that traverses the entire dialogue tree.
+- **Result**: The AI now "knows" every symptom, history detail, and response defined in the scenario, regardless of depth.
+
+#### 3. Improved System Prompt
+- **Persona-based**: clearer instructions on role-playing (Name, Age, Occupation).
+- **Improvisation**: Explicit permission to improvise non-clinical details (lifestyle, hobbies) while strictly adhering to clinical facts.
+- **Safe Defaults**: Instructions to deny symptoms not in the Knowledge Base ("If asked about a symptom NOT in your Knowledge Base, assume you do not have it").
+
+### Files Modified
+- `backend/app/core/azure_services.py`: Refactored `_build_system_prompt` and `generate_patient_response`.
+- `backend/app/services/scenario_engine.py`: Updated `process_student_input` to handle JSON responses.
+
+---
+
 ## 🎉 Conclusion
 
 Coach AI is a fully functional MVP ready for initial deployment and user testing. The application provides a solid foundation for clinical training with room for extensive future enhancements.
