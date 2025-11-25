@@ -15,6 +15,72 @@ from app.services.clark_integration import clark_service
 router = APIRouter()
 
 
+# ==============================================================================
+# Authentication Models & Endpoints
+# ==============================================================================
+
+
+class ClarkLoginRequest(BaseModel):
+    """Request body for Clark login"""
+
+    username: str
+    password: str
+
+
+class ClarkAuthStatus(BaseModel):
+    """Clark authentication status"""
+
+    authenticated: bool
+    username: Optional[str] = None
+    expires_at: Optional[str] = None
+
+
+class ClarkLoginResponse(BaseModel):
+    """Response from Clark login"""
+
+    success: bool
+    error: Optional[str] = None
+    user: Optional[dict] = None
+    expires_at: Optional[str] = None
+
+
+@router.post("/auth/login", response_model=ClarkLoginResponse)
+async def clark_login(
+    credentials: ClarkLoginRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Authenticate with Clark API using admin credentials.
+
+    This endpoint allows Coach admins to log into Clark to access
+    anonymized consultation data for scenario creation.
+    """
+    result = await clark_service.login(credentials.username, credentials.password)
+    return ClarkLoginResponse(**result)
+
+
+@router.post("/auth/logout")
+async def clark_logout(current_user: dict = Depends(get_current_user)):
+    """
+    Log out from Clark API (clear stored token).
+    """
+    clark_service.logout()
+    return {"success": True, "message": "Logged out from Clark"}
+
+
+@router.get("/auth/status", response_model=ClarkAuthStatus)
+async def clark_auth_status(current_user: dict = Depends(get_current_user)):
+    """
+    Get current Clark authentication status.
+    """
+    return ClarkAuthStatus(**clark_service.get_auth_status())
+
+
+# ==============================================================================
+# Consultation Models & Endpoints
+# ==============================================================================
+
+
 class ConsultationListItem(BaseModel):
     """Summary of a Clark consultation"""
 
@@ -54,17 +120,36 @@ async def list_consultations(
 ):
     """
     List available consultations from Clark that can be imported.
-    Returns mock data if Clark API is unavailable.
+    Requires Clark authentication. Returns mock data if not authenticated.
     """
-    try:
-        consultations = await clark_service.fetch_consultations(specialty=specialty, limit=limit)
+    # Check if authenticated with Clark
+    if clark_service.is_authenticated():
+        result = await clark_service.fetch_consultations(specialty=specialty, limit=limit)
 
-        if consultations:
-            return consultations
-    except Exception:
-        pass
+        if result.get("success"):
+            return {
+                "success": True,
+                "authenticated": True,
+                "consultations": result.get("consultations", []),
+                "count": result.get("count", 0),
+            }
+        elif result.get("code") == "TOKEN_EXPIRED":
+            return {
+                "success": False,
+                "authenticated": False,
+                "error": "Session expired - please log in again",
+                "consultations": [],
+            }
+        else:
+            # API error but still authenticated
+            return {
+                "success": False,
+                "authenticated": True,
+                "error": result.get("error"),
+                "consultations": [],
+            }
 
-    # Return mock data when Clark API is unavailable
+    # Not authenticated - return mock data with login required flag
     mock_consultations = [
         {
             "id": "clark_consult_001",
@@ -118,7 +203,15 @@ async def list_consultations(
             c for c in mock_consultations if c["specialty"].lower() == specialty.lower()
         ]
 
-    return mock_consultations[:limit]
+    return {
+        "success": True,
+        "authenticated": False,
+        "login_required": True,
+        "message": "Log in to Clark to access real consultation data",
+        "consultations": mock_consultations[:limit],
+        "count": len(mock_consultations[:limit]),
+        "is_mock_data": True,
+    }
 
 
 @router.get("/consultations/{consultation_id}/preview", response_model=ConsultationPreview)
@@ -128,12 +221,13 @@ async def preview_consultation(
 ):
     """
     Preview how a consultation would be converted to a scenario.
-    Returns mock data if Clark API is unavailable.
+    Returns mock data if not authenticated with Clark.
     """
-    try:
-        consultation = await clark_service.get_consultation(consultation_id)
-        if consultation:
-            scenario_data = clark_service.convert_to_scenario(consultation)
+    # Try to get from Clark if authenticated
+    if clark_service.is_authenticated():
+        result = await clark_service.get_consultation(consultation_id)
+        if result.get("success") and result.get("consultation"):
+            scenario_data = clark_service.convert_to_scenario(result["consultation"])
             return ConsultationPreview(
                 consultation_id=consultation_id,
                 title=scenario_data["title"],
@@ -143,8 +237,6 @@ async def preview_consultation(
                 correct_diagnosis=scenario_data["correct_diagnosis"],
                 learning_objectives=scenario_data["learning_objectives"],
             )
-    except Exception:
-        pass
 
     # Return mock preview based on consultation_id
     mock_previews = {
@@ -228,13 +320,16 @@ async def import_consultation(
     The scenario will need to be reviewed and published separately.
     """
     try:
-        # Try to get consultation from Clark
-        consultation = await clark_service.get_consultation(consultation_id)
+        scenario_data = None
 
-        if consultation:
-            scenario_data = clark_service.convert_to_scenario(consultation)
-        else:
-            # Use mock data for demo
+        # Try to get consultation from Clark if authenticated
+        if clark_service.is_authenticated():
+            result = await clark_service.get_consultation(consultation_id)
+            if result.get("success") and result.get("consultation"):
+                scenario_data = clark_service.convert_to_scenario(result["consultation"])
+
+        # Fall back to mock data if not from Clark
+        if not scenario_data:
             scenario_data = _get_mock_scenario_data(consultation_id)
 
         if not scenario_data:

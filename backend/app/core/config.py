@@ -1,8 +1,9 @@
 """Application configuration management"""
 
 from typing import List
+
+from pydantic import validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import AnyHttpUrl, validator
 
 
 class Settings(BaseSettings):
@@ -35,9 +36,11 @@ class Settings(BaseSettings):
     AZURE_AD_CLIENT_SECRET: str = ""
 
     # External APIs
-    CLARE_API_URL: str = "https://www.clareai.app/api"
+    CLARE_API_URL: str = (
+        "https://clare-guidelines-app-bqd0cggnf4a6gnfd.uksouth-01.azurewebsites.net"
+    )
     CLARE_API_KEY: str = ""
-    CLARK_API_URL: str = "https://www.clarkai.app/api"
+    CLARK_API_URL: str = "https://clark-medical-app-hwawcvckdrfngnbg.uksouth-01.azurewebsites.net"
     CLARK_API_KEY: str = ""
 
     # ElevenLabs (fallback)
@@ -57,16 +60,13 @@ class Settings(BaseSettings):
             # Handle JSON array string
             if v.startswith("["):
                 import json
+
                 return json.loads(v)
             # Handle comma-separated string
             return [i.strip() for i in v.split(",")]
         return v
 
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        case_sensitive=True,
-        extra="allow"
-    )
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="allow")
 
 
 # Create global settings instance

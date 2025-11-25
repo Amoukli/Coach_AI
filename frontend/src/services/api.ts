@@ -270,6 +270,22 @@ class ApiClient {
     return response.data
   }
 
+  // Clark Integration - Authentication
+  async clarkLogin(username: string, password: string) {
+    const response = await this.client.post('/clark/auth/login', { username, password })
+    return response.data
+  }
+
+  async clarkLogout() {
+    const response = await this.client.post('/clark/auth/logout')
+    return response.data
+  }
+
+  async getClarkAuthStatus() {
+    const response = await this.client.get('/clark/auth/status')
+    return response.data
+  }
+
   // Clark Integration - Import Consultations
   async getClarkConsultations(specialty?: string, limit: number = 20) {
     const params: Record<string, string | number> = { limit }
