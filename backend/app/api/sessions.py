@@ -22,7 +22,7 @@ router = APIRouter()
 # Pydantic schemas
 class SessionCreate(BaseModel):
     scenario_id: str
-    student_id: int
+    user_id: int
 
 
 class MessageAdd(BaseModel):
@@ -35,7 +35,7 @@ class SessionResponse(BaseModel):
     id: int
     session_id: str
     scenario_id: int
-    student_id: int
+    user_id: int
     status: SessionStatus
     started_at: datetime
     completed_at: Optional[datetime]
@@ -106,7 +106,7 @@ async def create_session(
     session_id = f"session_{uuid.uuid4().hex[:12]}"
     session = SessionModel(
         session_id=session_id,
-        student_id=session_data.student_id,
+        user_id=session_data.user_id,
         scenario_id=scenario.id,
         status=SessionStatus.IN_PROGRESS,
         started_at=datetime.utcnow(),
@@ -142,18 +142,18 @@ async def get_session(
     return session
 
 
-@router.get("/student/{student_id}", response_model=List[SessionListItem])
-async def list_student_sessions(
-    student_id: int,
+@router.get("/user/{user_id}", response_model=List[SessionListItem])
+async def list_user_sessions(
+    user_id: int,
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    """List all sessions for a student"""
+    """List all sessions for a user"""
     sessions = (
         db.query(SessionModel)
-        .filter(SessionModel.student_id == student_id)
+        .filter(SessionModel.user_id == user_id)
         .order_by(SessionModel.started_at.desc())
         .offset(skip)
         .limit(limit)
@@ -163,9 +163,9 @@ async def list_student_sessions(
     return sessions
 
 
-@router.get("/student/{student_id}/history", response_model=List[SessionWithDetails])
-async def list_student_session_history(
-    student_id: int,
+@router.get("/user/{user_id}/history", response_model=List[SessionWithDetails])
+async def list_user_session_history(
+    user_id: int,
     status: Optional[SessionStatus] = None,
     skip: int = 0,
     limit: int = 50,
@@ -173,7 +173,7 @@ async def list_student_session_history(
     current_user: dict = Depends(get_current_user),
 ):
     """
-    List all sessions for a student with scenario and assessment details.
+    List all sessions for a user with scenario and assessment details.
     This is the main endpoint for the "Past Cases" view in the dashboard.
     """
     # Build query joining sessions with scenarios and assessments
@@ -194,7 +194,7 @@ async def list_student_session_history(
         )
         .join(Scenario, SessionModel.scenario_id == Scenario.id)
         .outerjoin(Assessment, SessionModel.session_id == Assessment.session_id)
-        .filter(SessionModel.student_id == student_id)
+        .filter(SessionModel.user_id == user_id)
     )
 
     # Filter by status if provided
@@ -338,7 +338,7 @@ async def complete_session(
         assessment_id = f"assessment_{uuid.uuid4().hex[:12]}"
         assessment = Assessment(
             assessment_id=assessment_id,
-            student_id=session.student_id,
+            user_id=session.user_id,
             session_id=session.session_id,
             overall_score=assessment_result["overall_score"],
             history_taking_score=assessment_result["history_taking_score"],

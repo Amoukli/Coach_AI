@@ -1076,3 +1076,4 @@ Coach AI is a fully functional MVP ready for initial deployment and user testing
 **Documentation maintained by:** Claude (Anthropic)
 **Last updated:** November 23, 2025
 **Version:** 2.1.0 (UI Design System - Clark-style with Olive Green Theme)
+- Docker is installed locally, always rebuild containers when adding new feature or making fixes

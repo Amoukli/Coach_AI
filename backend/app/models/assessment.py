@@ -1,7 +1,8 @@
 """Assessment and feedback models"""
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, JSON, ForeignKey, Text
+
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -16,7 +17,7 @@ class Assessment(Base):
     assessment_id = Column(String, unique=True, index=True, nullable=False)
 
     # Foreign keys
-    student_id = Column(Integer, ForeignKey("students.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     session_id = Column(String, ForeignKey("sessions.session_id"), nullable=False)
 
     # Overall score (0-100)
@@ -62,8 +63,17 @@ class Assessment(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
-    student = relationship("Student", back_populates="assessments")
+    user = relationship("User", back_populates="assessments")
     session = relationship("Session", back_populates="assessment")
+
+    # Backwards compatibility property
+    @property
+    def student_id(self):
+        return self.user_id
+
+    @property
+    def student(self):
+        return self.user
 
     def __repr__(self):
         return f"<Assessment {self.assessment_id}: {self.overall_score}/100>"
@@ -75,7 +85,7 @@ class SkillProgress(Base):
     __tablename__ = "skill_progress"
 
     id = Column(Integer, primary_key=True, index=True)
-    student_id = Column(Integer, ForeignKey("students.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     skill_name = Column(String, nullable=False)  # e.g., "history_taking", "communication"
     current_level = Column(Integer, default=0)  # 0-100

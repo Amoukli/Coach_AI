@@ -18,23 +18,23 @@ interface SessionHistory {
 }
 
 interface PastCasesProps {
-  studentId: number
+  userId: number
 }
 
-const PastCases: React.FC<PastCasesProps> = ({ studentId }) => {
+const PastCases: React.FC<PastCasesProps> = ({ userId }) => {
   const [sessions, setSessions] = useState<SessionHistory[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<string>('all')
 
   useEffect(() => {
     loadSessions()
-  }, [studentId, filter])
+  }, [userId, filter])
 
   const loadSessions = async () => {
     try {
       setLoading(true)
       const status = filter === 'all' ? undefined : filter
-      const data = await apiClient.getStudentSessionHistory(studentId, status)
+      const data = await apiClient.getUserSessionHistory(userId, status)
       setSessions(data)
     } catch (error) {
       console.error('Error loading session history:', error)

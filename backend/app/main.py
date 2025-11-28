@@ -261,9 +261,11 @@ from app.api import (  # noqa: E402
     guidelines,
     scenarios,
     sessions,
+    users,
     voice,
 )
 
+app.include_router(users.router, prefix=f"{settings.API_V1_STR}/users", tags=["users"])
 app.include_router(scenarios.router, prefix=f"{settings.API_V1_STR}/scenarios", tags=["scenarios"])
 app.include_router(sessions.router, prefix=f"{settings.API_V1_STR}/sessions", tags=["sessions"])
 app.include_router(

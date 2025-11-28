@@ -1,22 +1,24 @@
 """Session models for consultation tracking"""
 
-from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, JSON, ForeignKey, Text, Enum
-from sqlalchemy.orm import relationship
 import enum
+from datetime import datetime
+
+from sqlalchemy import JSON, Boolean, Column, DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import relationship
 
 from app.core.database import Base
 
 
 class SessionStatus(str, enum.Enum):
     """Session status"""
+
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     ABANDONED = "abandoned"
 
 
 class Session(Base):
-    """Student consultation session"""
+    """User consultation session"""
 
     __tablename__ = "sessions"
 
@@ -24,7 +26,7 @@ class Session(Base):
     session_id = Column(String, unique=True, index=True, nullable=False)
 
     # Foreign keys
-    student_id = Column(Integer, ForeignKey("students.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     scenario_id = Column(Integer, ForeignKey("scenarios.id"), nullable=False)
 
     # Session data
@@ -58,9 +60,20 @@ class Session(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    student = relationship("Student", back_populates="sessions")
+    user = relationship("User", back_populates="sessions")
     scenario = relationship("Scenario", back_populates="sessions")
-    assessment = relationship("Assessment", back_populates="session", uselist=False, cascade="all, delete-orphan")
+    assessment = relationship(
+        "Assessment", back_populates="session", uselist=False, cascade="all, delete-orphan"
+    )
+
+    # Backwards compatibility property
+    @property
+    def student_id(self):
+        return self.user_id
+
+    @property
+    def student(self):
+        return self.user
 
     def __repr__(self):
         return f"<Session {self.session_id}>"

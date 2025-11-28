@@ -88,10 +88,10 @@ class ApiClient {
   }
 
   // Sessions
-  async createSession(scenarioId: string, studentId: number) {
+  async createSession(scenarioId: string, userId: number) {
     const response = await this.client.post('/sessions/', {
       scenario_id: scenarioId,
-      student_id: studentId,
+      user_id: userId,
     })
     return response.data
   }
@@ -101,17 +101,17 @@ class ApiClient {
     return response.data
   }
 
-  async getStudentSessions(studentId: number, skip = 0, limit = 50) {
-    const response = await this.client.get(`/sessions/student/${studentId}`, {
+  async getUserSessions(userId: number, skip = 0, limit = 50) {
+    const response = await this.client.get(`/sessions/user/${userId}`, {
       params: { skip, limit },
     })
     return response.data
   }
 
-  async getStudentSessionHistory(studentId: number, status?: string, skip = 0, limit = 50) {
+  async getUserSessionHistory(userId: number, status?: string, skip = 0, limit = 50) {
     const params: Record<string, string | number> = { skip, limit }
     if (status) params.status = status
-    const response = await this.client.get(`/sessions/student/${studentId}/history`, { params })
+    const response = await this.client.get(`/sessions/user/${userId}/history`, { params })
     return response.data
   }
 
@@ -147,15 +147,15 @@ class ApiClient {
     return response.data
   }
 
-  async getStudentAssessments(studentId: number, skip = 0, limit = 50) {
-    const response = await this.client.get(`/assessments/student/${studentId}`, {
+  async getUserAssessments(userId: number, skip = 0, limit = 50) {
+    const response = await this.client.get(`/assessments/user/${userId}`, {
       params: { skip, limit },
     })
     return response.data
   }
 
-  async getStudentSkillProgress(studentId: number) {
-    const response = await this.client.get(`/assessments/student/${studentId}/skills`)
+  async getUserSkillProgress(userId: number) {
+    const response = await this.client.get(`/assessments/user/${userId}/skills`)
     return response.data
   }
 
@@ -206,27 +206,43 @@ class ApiClient {
   }
 
   // Analytics
-  async getStudentDashboard(studentId: number) {
-    const response = await this.client.get(`/analytics/student/${studentId}/dashboard`)
+  async getUserDashboard(userId: number) {
+    const response = await this.client.get(`/analytics/user/${userId}/dashboard`)
     return response.data
   }
 
-  async getSkillsRadar(studentId: number) {
-    const response = await this.client.get(`/analytics/student/${studentId}/skills-radar`)
+  async getSkillsRadar(userId: number) {
+    const response = await this.client.get(`/analytics/user/${userId}/skills-radar`)
     return response.data
   }
 
-  async getProgressTrend(studentId: number, skill?: string, days = 30) {
-    const response = await this.client.get(`/analytics/student/${studentId}/progress-trend`, {
+  async getProgressTrend(userId: number, skill?: string, days = 30) {
+    const response = await this.client.get(`/analytics/user/${userId}/progress-trend`, {
       params: { skill, days },
     })
     return response.data
   }
 
-  async getScenarioRecommendations(studentId: number, limit = 5) {
-    const response = await this.client.get(`/analytics/student/${studentId}/recommendations`, {
+  async getScenarioRecommendations(userId: number, limit = 5) {
+    const response = await this.client.get(`/analytics/user/${userId}/recommendations`, {
       params: { limit },
     })
+    return response.data
+  }
+
+  // Users
+  async getCurrentUser() {
+    const response = await this.client.get('/users/me')
+    return response.data
+  }
+
+  async updateUserProfile(userData: any) {
+    const response = await this.client.put('/users/me', userData)
+    return response.data
+  }
+
+  async getUserById(userId: number) {
+    const response = await this.client.get(`/users/${userId}`)
     return response.data
   }
 

@@ -29,7 +29,7 @@ const Dashboard: React.FC = () => {
     try {
       setLoading(true)
       const [dashboardData, skills] = await Promise.all([
-        apiClient.getStudentDashboard(user.id),
+        apiClient.getUserDashboard(user.id),
         apiClient.getSkillsRadar(user.id),
       ])
 
@@ -54,7 +54,7 @@ const Dashboard: React.FC = () => {
     <div className="space-y-8">
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-primary-500 to-primary-600 rounded-lg shadow-card p-8 text-white">
-        <h1 className="text-3xl font-bold mb-2">Welcome back, {user.name}!</h1>
+        <h1 className="text-3xl font-bold mb-2">Welcome back, {user.full_name}!</h1>
         <p className="text-primary-100">Ready to continue your clinical training?</p>
       </div>
 
@@ -87,12 +87,12 @@ const Dashboard: React.FC = () => {
         {/* Progress Chart */}
         <div className="card">
           <h2 className="text-xl font-bold mb-4">Progress Over Time</h2>
-          <ProgressChart studentId={user.id} />
+          <ProgressChart userId={user.id} />
         </div>
       </div>
 
       {/* Past Cases */}
-      <PastCases studentId={user.id} />
+      <PastCases userId={user.id} />
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

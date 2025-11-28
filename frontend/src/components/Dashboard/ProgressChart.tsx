@@ -3,20 +3,20 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import apiClient from '../../services/api'
 
 interface ProgressChartProps {
-  studentId: number
+  userId: number
 }
 
-const ProgressChart: React.FC<ProgressChartProps> = ({ studentId }) => {
+const ProgressChart: React.FC<ProgressChartProps> = ({ userId }) => {
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     loadProgressData()
-  }, [studentId])
+  }, [userId])
 
   const loadProgressData = async () => {
     try {
-      const progressData = await apiClient.getProgressTrend(studentId, undefined, 30)
+      const progressData = await apiClient.getProgressTrend(userId, undefined, 30)
 
       // Transform data for chart
       const chartData = progressData.dates.map((date: string, index: number) => ({
