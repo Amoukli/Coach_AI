@@ -1,19 +1,23 @@
-import React from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import './Landing.css'
+import LoginModal from '../LoginModal'
 
 const Landing: React.FC = () => {
-  const navigate = useNavigate()
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
 
-  const handleLogin = () => {
-    navigate('/scenarios')
+  const handleLoginClick = () => {
+    setIsLoginModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsLoginModalOpen(false)
   }
 
   return (
     <div className="landing-page">
       {/* Header */}
       <header className="landing-header">
-        <button className="login-btn" onClick={handleLogin} aria-label="Login">
+        <button className="login-btn" onClick={handleLoginClick} aria-label="Login">
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
             <polyline points="10 17 15 12 10 7" />
@@ -106,6 +110,9 @@ const Landing: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      {/* Login Modal */}
+      <LoginModal isOpen={isLoginModalOpen} onClose={handleCloseModal} />
     </div>
   )
 }

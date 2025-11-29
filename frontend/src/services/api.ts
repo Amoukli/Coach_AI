@@ -35,9 +35,10 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       (error: AxiosError) => {
-        if (error.response?.status === 401) {
-          // Handle unauthorized - redirect to login
-          window.location.href = '/login'
+        // Log auth errors but don't redirect during development
+        // TODO: Enable redirect when proper auth is implemented
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          console.warn('Auth error:', error.response?.status, error.response?.data)
         }
         return Promise.reject(error)
       }

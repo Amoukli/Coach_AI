@@ -30,13 +30,38 @@ class AuthService {
   /**
    * Login (simplified - will be replaced with Azure AD B2C)
    */
-  async login(email: string, _password: string): Promise<User> {
+  async login(username: string, password: string): Promise<User> {
+    // Admin user for testing
+    if (username === 'admin' && password === 'admin') {
+      const adminUser: User = {
+        id: 1,
+        email: 'admin@coach.med',
+        username: 'admin',
+        first_name: 'Admin',
+        last_name: 'User',
+        full_name: 'Admin User',
+        institution: 'Coach Medical',
+        experience_level: 'physician_over_5_years',
+        role: 'admin',
+        is_active: true,
+        is_verified: true,
+        total_scenarios_completed: 0,
+        total_time_spent: 0,
+      }
+
+      this.currentUser = adminUser
+      localStorage.setItem('user', JSON.stringify(adminUser))
+      localStorage.setItem('auth_token', 'admin_token_' + Date.now())
+
+      return adminUser
+    }
+
     // TODO: Implement actual Azure AD B2C authentication
-    // For now, return mock user
+    // For now, return mock user for any other credentials
     const mockUser: User = {
-      id: 1,
-      email,
-      username: 'demo_student',
+      id: 2,
+      email: username.includes('@') ? username : `${username}@demo.edu`,
+      username: username,
       first_name: 'Demo',
       last_name: 'Student',
       full_name: 'Demo Student',
