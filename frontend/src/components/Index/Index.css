@@ -1,0 +1,360 @@
+/* Index Page Styles - Clark-style design with Coach olive green theme */
+
+/* Import Schibsted Grotesk font */
+@import url('https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap');
+
+/* CSS Variables for Coach brand colors */
+:root {
+  --coach-olive: rgb(102, 153, 0);
+  --coach-olive-light: rgba(102, 153, 0, 0.1);
+  --coach-olive-dark: rgb(82, 123, 0);
+  --text-primary: #2c3e50;
+  --text-secondary: #7f8c8d;
+  --background: #ffffff;
+  --background-light: #f8f9fa;
+  --border: #e1e8ed;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --sidebar-bg: #fafbfc;
+  --sidebar-border: #e1e8ed;
+}
+
+.index-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  font-family: "Schibsted Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+/* Header */
+.index-header {
+  position: relative;
+  flex-shrink: 0;
+  background: white;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+}
+
+.index-logo {
+  height: 40px;
+  width: auto;
+}
+
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* Main Content Area */
+.main-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Left Sidebar */
+.sidebar {
+  width: 80px;
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0;
+  gap: 15px;
+  flex-shrink: 0;
+}
+
+/* Button Separator */
+.button-separator {
+  width: 50px;
+  height: 1px;
+  background-color: var(--border);
+  margin: 5px 0;
+}
+
+/* Control Buttons */
+.control-btn {
+  width: 50px;
+  height: 50px;
+  border: none;
+  border-radius: 12px;
+  background: var(--background);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  position: relative;
+  box-shadow: 0 2px 4px var(--shadow);
+  text-decoration: none;
+  color: var(--text-primary);
+}
+
+.control-btn:hover:not(:disabled) {
+  background: var(--coach-olive-light);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px var(--shadow);
+}
+
+.control-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.control-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.control-btn.active {
+  background: var(--coach-olive);
+  color: white;
+}
+
+.control-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.control-btn.logout-btn:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Tooltip */
+.tooltip {
+  position: absolute;
+  left: 65px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--text-primary);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.tooltip::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 4px solid transparent;
+  border-right-color: var(--text-primary);
+}
+
+.control-btn:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Content Area */
+.content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--background);
+}
+
+/* Output Container */
+.output-container {
+  flex: 1;
+  padding: 30px;
+  overflow-y: auto;
+  background: var(--background);
+}
+
+.output-content {
+  max-width: 800px;
+  margin: 0 auto;
+  line-height: 1.6;
+  width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Welcome Message */
+.welcome-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 16px;
+  padding: 20px;
+  flex: 1;
+}
+
+.welcome-message > svg {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 20px;
+  opacity: 0.3;
+  stroke: var(--coach-olive);
+}
+
+.welcome-message .instructions-text {
+  max-width: 600px;
+  width: 90%;
+  text-align: left;
+  line-height: 1.8;
+}
+
+.welcome-message .instructions-text p:first-child {
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 20px;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+}
+
+.welcome-message .instructions-text ul {
+  padding-left: 20px;
+  margin: 0;
+  list-style-type: none;
+}
+
+.welcome-message .instructions-text ul li {
+  margin-bottom: 17px;
+  line-height: 1.6;
+  text-align: left;
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.welcome-message .instructions-text ul li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.5rem;
+  width: 8px;
+  height: 8px;
+  background: var(--coach-olive);
+  border-radius: 50%;
+}
+
+.welcome-message .instructions-text ul li strong {
+  color: var(--coach-olive-dark);
+}
+
+/* Footer */
+.index-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--background);
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  z-index: 900;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.index-footer .footer-container {
+  width: 100%;
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0 24px;
+}
+
+.index-footer .footer-text {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin: 0;
+}
+
+.index-footer .footer-links {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.index-footer .footer-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 12px;
+  transition: color 0.2s ease;
+}
+
+.index-footer .footer-link:hover {
+  color: var(--coach-olive);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 60px;
+    padding: 10px 0;
+    gap: 10px;
+  }
+
+  .control-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .control-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .button-separator {
+    width: 40px;
+  }
+
+  .tooltip {
+    left: 50px;
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+
+  .output-container {
+    padding: 20px;
+  }
+
+  .index-footer .footer-container {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .index-footer .footer-links {
+    justify-content: center;
+    gap: 1.5rem;
+    margin-left: 0;
+  }
+}

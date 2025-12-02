@@ -7,6 +7,8 @@ import Footer from './components/Layout/Footer'
 
 // Page components
 import Landing from './components/Landing'
+import Index from './components/Index'
+import Legal from './components/Legal'
 import Dashboard from './components/Dashboard'
 import ScenarioLibrary from './components/ScenarioLibrary'
 import ScenarioPlayer from './components/ScenarioPlayer'
@@ -34,6 +36,12 @@ function App() {
       <Routes>
         {/* Landing page - entry point (no header/footer) */}
         <Route path="/" element={<Landing />} />
+
+        {/* Index page - main app entry after login (no header/footer - has its own) */}
+        <Route path="/index" element={<Index />} />
+
+        {/* Legal page (no header/footer - has its own) */}
+        <Route path="/legal" element={<Legal />} />
 
         {/* App pages with header/footer */}
         <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />

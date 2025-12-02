@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import './Landing.css'
 import LoginModal from '../LoginModal'
+import TrialModal from '../TrialModal'
 
 const Landing: React.FC = () => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
+  const [isTrialModalOpen, setIsTrialModalOpen] = useState(false)
+  const [trialButtonText, setTrialButtonText] = useState('Free Trial')
 
   const handleLoginClick = () => {
     setIsLoginModalOpen(true)
@@ -11,6 +14,14 @@ const Landing: React.FC = () => {
 
   const handleCloseModal = () => {
     setIsLoginModalOpen(false)
+  }
+
+  const handleTrialClick = () => {
+    setIsTrialModalOpen(true)
+  }
+
+  const handleCloseTrialModal = () => {
+    setIsTrialModalOpen(false)
   }
 
   return (
@@ -37,6 +48,18 @@ const Landing: React.FC = () => {
             Transform clinical education with AI-powered patient simulations. Practice real-world scenarios,
             receive instant feedback, and build confidence before seeing real patients.
           </p>
+
+          {/* CTA Buttons */}
+          <div className="cta-buttons">
+            <button
+              className="cta-btn"
+              onClick={handleTrialClick}
+              onMouseEnter={() => setTrialButtonText('14-day Trial')}
+              onMouseLeave={() => setTrialButtonText('Free Trial')}
+            >
+              {trialButtonText}
+            </button>
+          </div>
         </div>
 
         {/* Features Section - inside main like Clark */}
@@ -104,15 +127,19 @@ const Landing: React.FC = () => {
         <div className="footer-content">
           <p>&copy; Coach 2025. All rights reserved. Clinical Training Platform</p>
           <div className="footer-links">
-            <a href="#privacy" className="footer-link">Privacy Policy</a>
-            <a href="#terms" className="footer-link">Terms of Service</a>
-            <a href="#contact" className="footer-link">Contact</a>
+            <a href="/legal#privacy" className="footer-link">Privacy Policy</a>
+            <a href="/legal#tos" className="footer-link">Terms of Service</a>
+            <a href="/legal#medical-disclaimer" className="footer-link">Medical Disclaimer</a>
+            <a href="/legal#contact" className="footer-link">Contact</a>
           </div>
         </div>
       </footer>
 
       {/* Login Modal */}
       <LoginModal isOpen={isLoginModalOpen} onClose={handleCloseModal} />
+
+      {/* Trial Modal */}
+      <TrialModal isOpen={isTrialModalOpen} onClose={handleCloseTrialModal} />
     </div>
   )
 }

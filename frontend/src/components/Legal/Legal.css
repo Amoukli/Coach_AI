@@ -1,0 +1,311 @@
+/* Legal Page Styles - Clark-style design with Coach olive green theme */
+
+/* Import Schibsted Grotesk font */
+@import url('https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap');
+
+/* CSS Variables for Coach brand colors */
+:root {
+  --coach-olive: rgb(102, 153, 0);
+  --coach-olive-light: rgba(102, 153, 0, 0.1);
+  --coach-olive-dark: rgb(82, 123, 0);
+  --text-primary: #2c3e50;
+  --text-secondary: #7f8c8d;
+  --background: #ffffff;
+  --background-light: #f8f9fa;
+  --border: #e1e8ed;
+}
+
+.legal-page {
+  min-height: 100vh;
+  background: var(--background-light);
+  font-family: "Schibsted Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text-primary);
+  padding-bottom: 80px;
+}
+
+/* Header */
+.legal-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: white;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+}
+
+.legal-logo {
+  height: 40px;
+  width: auto;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.header-btn {
+  padding: 0.5rem 1rem;
+  background: var(--coach-olive);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.header-btn:hover {
+  background: var(--coach-olive-dark);
+  transform: translateY(-1px);
+}
+
+/* Container */
+.legal-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+}
+
+/* Page Header */
+.page-header {
+  background: white;
+  padding: 3rem 2rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.page-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.last-updated {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  margin-top: 0.5rem;
+}
+
+.last-updated time {
+  font-weight: 500;
+  color: var(--coach-olive);
+}
+
+/* Navigation Section */
+.nav-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.nav-section h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+  color: var(--text-primary);
+}
+
+.nav-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0.75rem;
+}
+
+.nav-links a {
+  padding: 0.75rem 1rem;
+  background: var(--background-light);
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: all 0.2s;
+  border: 1px solid var(--border);
+  display: block;
+  font-size: 0.9rem;
+}
+
+.nav-links a:hover {
+  background: var(--coach-olive);
+  color: white;
+  transform: translateX(4px);
+  border-color: var(--coach-olive);
+}
+
+/* Content Sections */
+.content-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  margin-bottom: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.content-section h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 1.5rem 0;
+  padding-top: 1rem;
+  scroll-margin-top: 100px;
+}
+
+.content-section h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 1.5rem 0 0.75rem 0;
+}
+
+.content-section p {
+  color: var(--text-primary);
+  line-height: 1.7;
+  margin-bottom: 1rem;
+}
+
+.content-section ul,
+.content-section ol {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.content-section li {
+  margin-bottom: 0.5rem;
+  line-height: 1.7;
+}
+
+.content-section strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.content-section a {
+  color: var(--coach-olive);
+  text-decoration: none;
+}
+
+.content-section a:hover {
+  text-decoration: underline;
+}
+
+/* Divider */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 2rem 0;
+}
+
+/* Warning Box */
+.warning-box {
+  background: rgba(102, 153, 0, 0.1);
+  border: 1px solid var(--coach-olive);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.warning-box p {
+  margin: 0;
+}
+
+.warning-box strong {
+  color: var(--coach-olive-dark);
+}
+
+/* Footer */
+.legal-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  background: var(--background);
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  z-index: 900;
+}
+
+.legal-footer .footer-container {
+  width: 100%;
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0 24px;
+}
+
+.legal-footer .footer-text {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin: 0;
+}
+
+.legal-footer .footer-links {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.legal-footer .footer-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 12px;
+  transition: color 0.2s ease;
+}
+
+.legal-footer .footer-link:hover {
+  color: var(--coach-olive);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .legal-container {
+    padding: 2rem 1rem;
+  }
+
+  .page-header {
+    padding: 2rem 1.5rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .nav-links {
+    grid-template-columns: 1fr;
+  }
+
+  .content-section {
+    padding: 1.5rem;
+  }
+
+  .legal-footer .footer-container {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .legal-footer .footer-links {
+    justify-content: center;
+    gap: 1.5rem;
+    margin-left: 0;
+  }
+}

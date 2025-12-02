@@ -51,7 +51,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
       if (email === 'admin' && password === 'admin') {
         await authService.login(email, password)
         onClose()
-        window.location.href = '/dashboard'
+        window.location.href = '/index'
       } else {
         setError('Invalid username or password. Use admin/admin for testing.')
       }

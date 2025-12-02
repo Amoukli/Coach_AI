@@ -117,8 +117,41 @@
   font-weight: 400;
   color: var(--text-secondary);
   max-width: 800px;
-  margin: 0 auto 2.5rem auto;
+  margin: 0 auto 2rem auto;
   line-height: 1.5;
+}
+
+/* CTA Buttons Container */
+.cta-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 2.5rem;
+}
+
+.cta-btn {
+  padding: 0.875rem 2.5rem;
+  background: white;
+  color: var(--text-primary);
+  border: 2px solid var(--coach-olive-dark);
+  border-radius: 50px;
+  font-family: "Schibsted Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+  min-width: 140px;
+}
+
+.cta-btn:hover {
+  background: var(--coach-olive);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 153, 0, 0.3);
+  border-color: var(--coach-olive);
 }
 
 /* Features Section - Clark style scrolling cards */
