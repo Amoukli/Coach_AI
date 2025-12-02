@@ -34,6 +34,7 @@ const Landing: React.FC = () => {
             <polyline points="10 17 15 12 10 7" />
             <line x1="15" y1="12" x2="3" y2="12" />
           </svg>
+          <span className="tooltip">Login</span>
         </button>
       </header>
 
@@ -131,6 +132,7 @@ const Landing: React.FC = () => {
             <a href="/legal#tos" className="footer-link">Terms of Service</a>
             <a href="/legal#medical-disclaimer" className="footer-link">Medical Disclaimer</a>
             <a href="/legal#contact" className="footer-link">Contact</a>
+            <a href="/admin/scenarios" className="footer-link">Admin</a>
           </div>
         </div>
       </footer>
