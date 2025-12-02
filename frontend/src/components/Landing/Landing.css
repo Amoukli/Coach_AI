@@ -71,6 +71,7 @@
 /* Login button tooltip - Clark style (positioned to the left of icon) */
 .login-btn .tooltip {
   position: absolute;
+  left: auto;
   right: 100%;
   margin-right: 10px;
   top: 50%;
