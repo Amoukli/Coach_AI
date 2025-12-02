@@ -68,10 +68,11 @@
   fill: none;
 }
 
-/* Login button tooltip - Clark style (positioned to the left) */
+/* Login button tooltip - Clark style (positioned to the left of icon) */
 .login-btn .tooltip {
   position: absolute;
-  right: 50px;
+  right: 100%;
+  margin-right: 10px;
   top: 50%;
   transform: translateY(-50%);
   background: var(--text-primary);
@@ -91,7 +92,7 @@
 .login-btn .tooltip::after {
   content: '';
   position: absolute;
-  right: -4px;
+  left: 100%;
   top: 50%;
   transform: translateY(-50%);
   border: 4px solid transparent;

@@ -150,10 +150,12 @@
   transform: none;
 }
 
-/* Footer Links */
+/* Footer Links (Forgot Password) */
 .login-modal-content .footer-links {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   margin-top: 16px;
-  text-align: center;
   font-size: 0.9rem;
 }
 
