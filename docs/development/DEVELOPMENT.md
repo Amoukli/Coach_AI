@@ -22,8 +22,8 @@ Guide for developers working on Coach AI.
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/Coach_AI.git
-cd Coach_AI
+git clone https://github.com/AMoukli/Coach.git
+cd Coach
 
 # Copy environment file
 cp .env.example .env
@@ -98,7 +98,7 @@ Frontend will be available at http://localhost:3000
 ## 📁 Project Structure
 
 ```
-Coach_AI/
+Coach/
 ├── backend/
 │   ├── app/
 │   │   ├── api/              # API route handlers

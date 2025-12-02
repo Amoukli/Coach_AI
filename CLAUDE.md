@@ -699,7 +699,7 @@ ELEVENLABS_API_KEY           # Voice fallback
 ## 📝 Git Repository Structure
 
 ```
-Coach_AI/
+Coach/
 ├── .github/
 │   └── workflows/
 │       └── azure-deploy.yml       # CI/CD pipeline

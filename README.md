@@ -55,8 +55,8 @@ Coach AI is an interactive clinical training platform that helps undergraduate m
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/Coach_AI.git
-   cd Coach_AI
+   git clone https://github.com/AMoukli/Coach.git
+   cd Coach
    ```
 
 2. **Set up environment variables**
@@ -290,7 +290,7 @@ Copyright © 2025 Coach AI. All rights reserved.
 ## 📞 Support
 
 For issues, questions, or contributions:
-- GitHub Issues: [https://github.com/yourusername/Coach_AI/issues](https://github.com/yourusername/Coach_AI/issues)
+- GitHub Issues: [https://github.com/AMoukli/Coach/issues](https://github.com/AMoukli/Coach/issues)
 - Documentation: See `/docs` directory for detailed guides
 - Quick Start: See [docs/QUICKSTART.md](docs/QUICKSTART.md)
 

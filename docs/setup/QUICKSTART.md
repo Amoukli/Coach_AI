@@ -13,7 +13,7 @@ Get Coach AI up and running in 5 minutes!
 ### 1. Clone and Navigate
 
 ```bash
-cd Coach_AI
+cd Coach
 ```
 
 ### 2. Configure Environment
