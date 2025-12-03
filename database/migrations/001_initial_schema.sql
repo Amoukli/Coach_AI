@@ -1,4 +1,4 @@
--- Coach AI Database Schema
+-- Coach Database Schema
 -- Initial migration
 
 -- Create students table

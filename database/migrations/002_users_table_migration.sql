@@ -1,4 +1,4 @@
--- Coach AI Database Schema Migration
+-- Coach Database Schema Migration
 -- Migration 002: Rename students to users and add new fields
 -- Date: 2025-11-28
 --

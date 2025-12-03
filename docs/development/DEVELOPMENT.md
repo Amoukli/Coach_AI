@@ -1,6 +1,6 @@
-# Coach AI - Development Guide
+# Coach - Development Guide
 
-Guide for developers working on Coach AI.
+Guide for developers working on Coach.
 
 ---
 

@@ -1,6 +1,6 @@
-# Coach AI - Clinical Training Platform
+# Coach - Clinical Training Platform
 
-Coach AI is an interactive clinical training platform that helps undergraduate medical students and newly qualified physicians practice their clinical skills through realistic patient simulations.
+Coach is an interactive clinical training platform that helps undergraduate medical students and newly qualified physicians practice their clinical skills through realistic patient simulations.
 
 ## 🎯 Features
 
@@ -279,7 +279,7 @@ For technical implementation details, see [CLAUDE.md](CLAUDE.md).
 
 ## 📝 License
 
-Copyright © 2025 Coach AI. All rights reserved.
+Copyright © 2025 Coach. All rights reserved.
 
 ## 🙏 Acknowledgments
 

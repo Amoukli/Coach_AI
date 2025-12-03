@@ -1,6 +1,6 @@
-# Quick Start Guide - Coach AI
+# Quick Start Guide - Coach
 
-Get Coach AI up and running in 5 minutes!
+Get Coach up and running in 5 minutes!
 
 ## Prerequisites
 

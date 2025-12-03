@@ -1,4 +1,4 @@
--- Sample Scenarios for Coach AI Testing
+-- Sample Scenarios for Coach Testing
 -- Run this to populate the database with test scenarios
 
 -- Scenario 1: Acute Chest Pain (Cardiology)

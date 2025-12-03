@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Validate documentation diagrams for Coach AI Clinical Training Platform.
+Validate documentation diagrams for Coach Clinical Training Platform.
 
 This script checks that all diagrams in docs/diagrams/ are:
 1. Valid Mermaid syntax
@@ -72,7 +72,7 @@ class DiagramValidator:
         # Check 4: Consistent model names
         self.check_model_names(file_path, content)
 
-        # Check 5: Coach AI specific checks
+        # Check 5: Coach specific checks
         self.check_coach_specific(file_path, content)
 
     def check_metadata(self, file_path: Path, content: str):
@@ -154,7 +154,7 @@ class DiagramValidator:
 
     def check_model_names(self, file_path: Path, content: str):
         """Check for consistent AI model naming"""
-        # Coach AI uses Azure OpenAI with gpt-4o
+        # Coach uses Azure OpenAI with gpt-4o
         incorrect_patterns = {
             r"GPT-4\.1-mini": "Use 'gpt-4o-mini' (correct version)",
             r"gpt-4\.1-mini": "Use 'gpt-4o-mini' (correct version)",
@@ -167,7 +167,7 @@ class DiagramValidator:
                 self.errors.append(f"{file_path.name}: Incorrect model name format. {suggestion}")
 
     def check_coach_specific(self, file_path: Path, content: str):
-        """Check Coach AI specific terminology and components"""
+        """Check Coach specific terminology and components"""
         # Check for typos in service names
         service_typos = {
             "Senario": "Scenario",

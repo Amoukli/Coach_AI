@@ -1,6 +1,6 @@
-# Coach AI - Deployment Guide
+# Coach - Deployment Guide
 
-Complete guide for deploying Coach AI to Azure.
+Complete guide for deploying Coach to Azure.
 
 ---
 
@@ -22,6 +22,149 @@ Complete guide for deploying Coach AI to Azure.
 - Azure Speech Services
 - Azure Storage Account (for audio files)
 - Azure Application Insights (monitoring)
+
+---
+
+## 🔗 Deploying Alongside Clare & Clark
+
+Coach is designed to integrate with the existing Clare (clinical guidelines) and Clark (consultation transcription) ecosystem. This section covers the specific requirements for deploying Coach alongside these applications.
+
+### Integration Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Azure Resource Group                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────┐    ┌──────────┐    ┌──────────┐                  │
+│  │  Clare   │    │  Clark   │    │  Coach   │                  │
+│  │  (API)   │    │  (API)   │    │  (API)   │                  │
+│  └────┬─────┘    └────┬─────┘    └────┬─────┘                  │
+│       │               │               │                         │
+│       └───────────────┼───────────────┘                         │
+│                       │                                          │
+│              ┌────────┴────────┐                                │
+│              │  Shared Azure   │                                │
+│              │  AI Services    │                                │
+│              │  (OpenAI/Speech)│                                │
+│              └─────────────────┘                                │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Required Azure Resources for Coach
+
+| Service | Purpose | Tier Recommendation |
+|---------|---------|---------------------|
+| **Azure App Service** | Backend API (FastAPI) | B2 or P1v2 |
+| **Azure Static Web Apps** | Frontend (React) | Standard |
+| **Azure Database for PostgreSQL** | Coach-specific database | Flexible Server, Basic/GP |
+
+### Shared vs. Dedicated Resources
+
+| Resource | Recommendation | Notes |
+|----------|----------------|-------|
+| **Azure OpenAI** | Share with Clare/Clark | Same GPT-4 deployment, reduces cost |
+| **Azure Speech Services** | Share with Clare/Clark | Same TTS/STT service |
+| **Azure AD B2C** | Share with Clare/Clark | Single sign-on across ecosystem |
+| **Resource Group** | Same or separate | Same RG simplifies management |
+| **Database** | Dedicated for Coach | Separate PostgreSQL instance |
+
+### Clare & Clark Integration Requirements
+
+#### API Keys Required
+
+Coach requires API keys to communicate with Clare and Clark services:
+
+```bash
+# Clare Guidelines API
+CLARE_API_URL=https://www.clareai.app/api
+CLARE_API_KEY=<internal-api-key-from-clare>
+
+# Clark Consultation API
+CLARK_API_URL=https://www.clarkai.app/api
+CLARK_API_KEY=<internal-api-key-from-clark>
+```
+
+**To obtain API keys:**
+1. Contact the Clare/Clark team administrator
+2. Request internal API keys for Coach integration
+3. Keys should have permissions for:
+   - Clare: `GET /search` (guidelines search)
+   - Clark: `GET /consultations`, `GET /consultations/{id}`
+
+#### Network Connectivity
+
+Coach backend must be able to reach Clare and Clark APIs:
+
+- **Clare API**: `https://www.clareai.app/api`
+- **Clark API**: `https://www.clarkai.app/api`
+
+If Clare/Clark are in the same Azure subscription, consider:
+- VNet integration for private communication
+- Service endpoints for enhanced security
+- Private DNS zones if using private endpoints
+
+#### Authentication Integration (Azure AD B2C)
+
+For seamless user experience across Clare, Clark, and Coach:
+
+```bash
+# Shared Azure AD B2C tenant
+AZURE_AD_TENANT_ID=<shared-tenant-id>
+AZURE_AD_CLIENT_ID=<coach-client-id>
+AZURE_AD_CLIENT_SECRET=<coach-client-secret>
+
+# Frontend
+VITE_AZURE_AD_CLIENT_ID=<coach-client-id>
+VITE_AZURE_AD_TENANT=<shared-tenant>
+VITE_AZURE_AD_AUTHORITY=https://<tenant>.b2clogin.com/<tenant>.onmicrosoft.com
+```
+
+**Setup steps:**
+1. Register Coach as new application in existing Azure AD B2C tenant
+2. Configure redirect URIs for Coach frontend
+3. Add API permissions for Coach backend
+4. Share user flow policies with Clare/Clark
+
+### Cost Optimization When Sharing Resources
+
+If sharing Azure AI services with Clare/Clark:
+
+| Resource | Dedicated Cost | Shared Cost (Coach portion) |
+|----------|---------------|----------------------------|
+| Azure OpenAI | ~$200-500/mo | Incremental usage only |
+| Azure Speech | ~$100-200/mo | Incremental usage only |
+| Azure AD B2C | ~$50/mo | $0 (shared) |
+
+**Estimated Coach-specific costs:**
+- App Service (B2): ~$50-100/month
+- Static Web Apps: ~$0-10/month
+- PostgreSQL (Basic): ~$30-50/month
+- AI Services (shared): Incremental based on usage
+
+**Total when sharing**: ~$80-160/month additional
+
+### Pre-Deployment Checklist for Clare/Clark Integration
+
+- [ ] Obtain Clare API key with search permissions
+- [ ] Obtain Clark API key with consultation read permissions
+- [ ] Verify network connectivity to Clare/Clark APIs
+- [ ] Register Coach in shared Azure AD B2C tenant (if using SSO)
+- [ ] Confirm shared Azure OpenAI has sufficient quota
+- [ ] Confirm shared Azure Speech Services has sufficient quota
+- [ ] Test Clare integration endpoint: `GET /api/v1/guidelines/search`
+- [ ] Test Clark integration endpoint: `GET /api/v1/clark/consultations`
+
+### Fallback Behavior
+
+Coach includes mock data fallback when Clare/Clark APIs are unavailable:
+
+- **Guidelines search**: Returns sample clinical guidelines
+- **Consultation list**: Returns sample consultations
+- **Consultation import**: Returns preview with mock data
+
+This allows development and testing without active Clare/Clark connections.
 
 ---
 
@@ -51,7 +194,7 @@ az account set --subscription "Your Subscription Name"
 
 # Create resource group
 az group create \
-  --name coach-ai-rg \
+  --name coach-rg \
   --location uksouth
 ```
 
@@ -60,8 +203,8 @@ az group create \
 ```bash
 # Create PostgreSQL server
 az postgres flexible-server create \
-  --name coach-ai-db \
-  --resource-group coach-ai-rg \
+  --name coach-db \
+  --resource-group coach-rg \
   --location uksouth \
   --admin-user coachdbadmin \
   --admin-password 'YourSecurePassword123!' \
@@ -72,21 +215,21 @@ az postgres flexible-server create \
 
 # Create database
 az postgres flexible-server db create \
-  --resource-group coach-ai-rg \
-  --server-name coach-ai-db \
+  --resource-group coach-rg \
+  --server-name coach-db \
   --database-name coach_db
 
 # Configure firewall (allow Azure services)
 az postgres flexible-server firewall-rule create \
-  --resource-group coach-ai-rg \
-  --name coach-ai-db \
+  --resource-group coach-rg \
+  --name coach-db \
   --rule-name AllowAzureServices \
   --start-ip-address 0.0.0.0 \
   --end-ip-address 0.0.0.0
 
 # Get connection string
 az postgres flexible-server show-connection-string \
-  --server-name coach-ai-db \
+  --server-name coach-db \
   --database-name coach_db \
   --admin-user coachdbadmin
 ```
@@ -96,16 +239,16 @@ az postgres flexible-server show-connection-string \
 ```bash
 # Create Azure OpenAI
 az cognitiveservices account create \
-  --name coach-ai-openai \
-  --resource-group coach-ai-rg \
+  --name coach-openai \
+  --resource-group coach-rg \
   --location uksouth \
   --kind OpenAI \
   --sku S0
 
 # Deploy GPT-4 model
 az cognitiveservices account deployment create \
-  --name coach-ai-openai \
-  --resource-group coach-ai-rg \
+  --name coach-openai \
+  --resource-group coach-rg \
   --deployment-name gpt-4 \
   --model-name gpt-4 \
   --model-version "0613" \
@@ -115,8 +258,8 @@ az cognitiveservices account deployment create \
 
 # Get keys
 az cognitiveservices account keys list \
-  --name coach-ai-openai \
-  --resource-group coach-ai-rg
+  --name coach-openai \
+  --resource-group coach-rg
 ```
 
 #### 1.4 Create Azure Speech Services
@@ -124,16 +267,16 @@ az cognitiveservices account keys list \
 ```bash
 # Create Speech service
 az cognitiveservices account create \
-  --name coach-ai-speech \
-  --resource-group coach-ai-rg \
+  --name coach-speech \
+  --resource-group coach-rg \
   --location uksouth \
   --kind SpeechServices \
   --sku S0
 
 # Get keys
 az cognitiveservices account keys list \
-  --name coach-ai-speech \
-  --resource-group coach-ai-rg
+  --name coach-speech \
+  --resource-group coach-rg
 ```
 
 #### 1.5 Create Storage Account (for audio files)
@@ -142,7 +285,7 @@ az cognitiveservices account keys list \
 # Create storage account
 az storage account create \
   --name coachaistorage \
-  --resource-group coach-ai-rg \
+  --resource-group coach-rg \
   --location uksouth \
   --sku Standard_LRS
 
@@ -158,15 +301,15 @@ az storage container create \
 ```bash
 # Create Application Insights
 az monitor app-insights component create \
-  --app coach-ai-insights \
+  --app coach-insights \
   --location uksouth \
-  --resource-group coach-ai-rg \
+  --resource-group coach-rg \
   --application-type web
 
 # Get instrumentation key
 az monitor app-insights component show \
-  --app coach-ai-insights \
-  --resource-group coach-ai-rg \
+  --app coach-insights \
+  --resource-group coach-rg \
   --query instrumentationKey
 ```
 
@@ -179,8 +322,8 @@ az monitor app-insights component show \
 ```bash
 # Create App Service plan
 az appservice plan create \
-  --name coach-ai-plan \
-  --resource-group coach-ai-rg \
+  --name coach-plan \
+  --resource-group coach-rg \
   --location uksouth \
   --sku B2 \
   --is-linux
@@ -191,15 +334,15 @@ az appservice plan create \
 ```bash
 # Create web app
 az webapp create \
-  --name coach-ai-backend \
-  --resource-group coach-ai-rg \
-  --plan coach-ai-plan \
+  --name coach-backend \
+  --resource-group coach-rg \
+  --plan coach-plan \
   --runtime "PYTHON:3.11"
 
 # Enable WebSockets
 az webapp config set \
-  --name coach-ai-backend \
-  --resource-group coach-ai-rg \
+  --name coach-backend \
+  --resource-group coach-rg \
   --web-sockets-enabled true
 ```
 
@@ -208,20 +351,20 @@ az webapp config set \
 ```bash
 # Set application settings
 az webapp config appsettings set \
-  --name coach-ai-backend \
-  --resource-group coach-ai-rg \
+  --name coach-backend \
+  --resource-group coach-rg \
   --settings \
-    DATABASE_URL="postgresql://coachdbadmin:YourSecurePassword123!@coach-ai-db.postgres.database.azure.com/coach_db" \
-    DATABASE_URL_ASYNC="postgresql+asyncpg://coachdbadmin:YourSecurePassword123!@coach-ai-db.postgres.database.azure.com/coach_db" \
+    DATABASE_URL="postgresql://coachdbadmin:YourSecurePassword123!@coach-db.postgres.database.azure.com/coach_db" \
+    DATABASE_URL_ASYNC="postgresql+asyncpg://coachdbadmin:YourSecurePassword123!@coach-db.postgres.database.azure.com/coach_db" \
     AZURE_SPEECH_KEY="your_speech_key" \
     AZURE_SPEECH_REGION="uksouth" \
     AZURE_OPENAI_KEY="your_openai_key" \
-    AZURE_OPENAI_ENDPOINT="https://coach-ai-openai.openai.azure.com/" \
+    AZURE_OPENAI_ENDPOINT="https://coach-openai.openai.azure.com/" \
     AZURE_OPENAI_DEPLOYMENT_NAME="gpt-4" \
     JWT_SECRET_KEY="your-production-secret-key" \
     ENVIRONMENT="production" \
     DEBUG="False" \
-    CORS_ORIGINS='["https://coach-ai-frontend.azurestaticapps.net"]'
+    CORS_ORIGINS='["https://coach-frontend.azurestaticapps.net"]'
 ```
 
 #### 2.4 Get Publish Profile
@@ -229,8 +372,8 @@ az webapp config appsettings set \
 ```bash
 # Download publish profile for GitHub Actions
 az webapp deployment list-publishing-profiles \
-  --name coach-ai-backend \
-  --resource-group coach-ai-rg \
+  --name coach-backend \
+  --resource-group coach-rg \
   --xml
 ```
 
@@ -243,15 +386,15 @@ az webapp deployment list-publishing-profiles \
 ```bash
 # Create Static Web App
 az staticwebapp create \
-  --name coach-ai-frontend \
-  --resource-group coach-ai-rg \
+  --name coach-frontend \
+  --resource-group coach-rg \
   --location "West Europe" \
   --sku Standard
 
 # Get deployment token
 az staticwebapp secrets list \
-  --name coach-ai-frontend \
-  --resource-group coach-ai-rg \
+  --name coach-frontend \
+  --resource-group coach-rg \
   --query "properties.apiKey"
 ```
 
@@ -260,8 +403,8 @@ az staticwebapp secrets list \
 ```bash
 # Add custom domain
 az staticwebapp hostname set \
-  --name coach-ai-frontend \
-  --resource-group coach-ai-rg \
+  --name coach-frontend \
+  --resource-group coach-rg \
   --hostname www.your-domain.com
 ```
 
@@ -277,14 +420,14 @@ az staticwebapp hostname set \
 # Ubuntu: sudo apt-get install postgresql-client
 
 # Connect to database
-psql "host=coach-ai-db.postgres.database.azure.com port=5432 dbname=coach_db user=coachdbadmin password=YourSecurePassword123! sslmode=require"
+psql "host=coach-db.postgres.database.azure.com port=5432 dbname=coach_db user=coachdbadmin password=YourSecurePassword123! sslmode=require"
 ```
 
 #### 4.2 Run Migrations
 
 ```bash
 # Run migration script
-psql "host=coach-ai-db.postgres.database.azure.com port=5432 dbname=coach_db user=coachdbadmin password=YourSecurePassword123! sslmode=require" \
+psql "host=coach-db.postgres.database.azure.com port=5432 dbname=coach_db user=coachdbadmin password=YourSecurePassword123! sslmode=require" \
   -f database/migrations/001_initial_schema.sql
 ```
 
@@ -306,13 +449,13 @@ AZURE_STATIC_WEB_APPS_API_TOKEN
   → Content from: az staticwebapp secrets list
 
 DATABASE_URL
-  → postgresql://coachdbadmin:YourSecurePassword123!@coach-ai-db.postgres.database.azure.com/coach_db
+  → postgresql://coachdbadmin:YourSecurePassword123!@coach-db.postgres.database.azure.com/coach_db
 
 VITE_API_URL
-  → https://coach-ai-backend.azurewebsites.net
+  → https://coach-backend.azurewebsites.net
 
 VITE_WS_URL
-  → wss://coach-ai-backend.azurewebsites.net
+  → wss://coach-backend.azurewebsites.net
 
 AZURE_SPEECH_KEY
 AZURE_SPEECH_REGION
@@ -324,9 +467,85 @@ CLARK_API_KEY
 JWT_SECRET_KEY
 ```
 
-#### 5.2 Enable GitHub Actions
+#### 5.2 Create GitHub Actions Workflow
 
-The workflow file is already in `.github/workflows/azure-deploy.yml`
+> **Note:** The GitHub Actions workflow file (`.github/workflows/azure-deploy.yml`) needs to be created. See the workflow template below.
+
+Create `.github/workflows/azure-deploy.yml`:
+
+```yaml
+name: Deploy to Azure
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: coach-backend
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_BACKEND }}
+          package: ./backend
+
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install and build
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_WS_URL: ${{ secrets.VITE_WS_URL }}
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: frontend/dist
+          skip_app_build: true
+
+  run-migrations:
+    runs-on: ubuntu-latest
+    needs: deploy-backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run database migrations
+        run: |
+          PGPASSWORD=${{ secrets.DB_PASSWORD }} psql \
+            -h ${{ secrets.DB_HOST }} \
+            -U ${{ secrets.DB_USER }} \
+            -d coach_db \
+            -f database/migrations/001_initial_schema.sql
+```
 
 Push to main branch to trigger deployment:
 
@@ -344,23 +563,23 @@ git push origin main
 
 ```bash
 # Test health endpoint
-curl https://coach-ai-backend.azurewebsites.net/health
+curl https://coach-backend.azurewebsites.net/health
 
 # Test API
-curl https://coach-ai-backend.azurewebsites.net/api/v1/health
+curl https://coach-backend.azurewebsites.net/api/v1/health
 ```
 
 #### 6.2 Check Frontend
 
 Open browser and navigate to:
-- https://coach-ai-frontend.azurestaticapps.net
+- https://coach-frontend.azurestaticapps.net
 - or your custom domain
 
 #### 6.3 Check Database
 
 ```bash
 # Connect and verify tables
-psql "host=coach-ai-db.postgres.database.azure.com port=5432 dbname=coach_db user=coachdbadmin password=YourSecurePassword123! sslmode=require" \
+psql "host=coach-db.postgres.database.azure.com port=5432 dbname=coach_db user=coachdbadmin password=YourSecurePassword123! sslmode=require" \
   -c "\dt"
 ```
 
@@ -384,10 +603,10 @@ Update backend CORS settings:
 
 ```bash
 az webapp config appsettings set \
-  --name coach-ai-backend \
-  --resource-group coach-ai-rg \
+  --name coach-backend \
+  --resource-group coach-rg \
   --settings \
-    CORS_ORIGINS='["https://coach-ai-frontend.azurestaticapps.net","https://www.your-domain.com"]'
+    CORS_ORIGINS='["https://coach-frontend.azurestaticapps.net","https://www.your-domain.com"]'
 ```
 
 ### Scaling
@@ -397,16 +616,16 @@ az webapp config appsettings set \
 ```bash
 # Manual scale
 az appservice plan update \
-  --name coach-ai-plan \
-  --resource-group coach-ai-rg \
+  --name coach-plan \
+  --resource-group coach-rg \
   --number-of-workers 3
 
 # Auto-scale (requires Standard tier or higher)
 az monitor autoscale create \
-  --resource-group coach-ai-rg \
-  --resource coach-ai-plan \
+  --resource-group coach-rg \
+  --resource coach-plan \
   --resource-type Microsoft.Web/serverfarms \
-  --name coach-ai-autoscale \
+  --name coach-autoscale \
   --min-count 2 \
   --max-count 5 \
   --count 2
@@ -417,8 +636,8 @@ az monitor autoscale create \
 ```bash
 # Scale up database
 az postgres flexible-server update \
-  --name coach-ai-db \
-  --resource-group coach-ai-rg \
+  --name coach-db \
+  --resource-group coach-rg \
   --sku-name Standard_D2s_v3 \
   --tier GeneralPurpose
 ```
@@ -442,8 +661,8 @@ View metrics in Azure Portal:
 # CPU alert
 az monitor metrics alert create \
   --name high-cpu \
-  --resource-group coach-ai-rg \
-  --scopes /subscriptions/{subscription-id}/resourceGroups/coach-ai-rg/providers/Microsoft.Web/sites/coach-ai-backend \
+  --resource-group coach-rg \
+  --scopes /subscriptions/{subscription-id}/resourceGroups/coach-rg/providers/Microsoft.Web/sites/coach-backend \
   --condition "avg Percentage CPU > 80" \
   --window-size 5m \
   --evaluation-frequency 1m
@@ -454,15 +673,15 @@ az monitor metrics alert create \
 ```bash
 # Enable application logs
 az webapp log config \
-  --name coach-ai-backend \
-  --resource-group coach-ai-rg \
+  --name coach-backend \
+  --resource-group coach-rg \
   --application-logging filesystem \
   --level information
 
 # Stream logs
 az webapp log tail \
-  --name coach-ai-backend \
-  --resource-group coach-ai-rg
+  --name coach-backend \
+  --resource-group coach-rg
 ```
 
 ---
@@ -474,8 +693,8 @@ az webapp log tail \
 ```bash
 # Enable system-assigned managed identity
 az webapp identity assign \
-  --name coach-ai-backend \
-  --resource-group coach-ai-rg
+  --name coach-backend \
+  --resource-group coach-rg
 ```
 
 ### Key Vault (Recommended for Production)
@@ -483,19 +702,19 @@ az webapp identity assign \
 ```bash
 # Create Key Vault
 az keyvault create \
-  --name coach-ai-keyvault \
-  --resource-group coach-ai-rg \
+  --name coach-keyvault \
+  --resource-group coach-rg \
   --location uksouth
 
 # Add secrets
 az keyvault secret set \
-  --vault-name coach-ai-keyvault \
+  --vault-name coach-keyvault \
   --name "DatabasePassword" \
   --value "YourSecurePassword123!"
 
 # Grant App Service access
 az keyvault set-policy \
-  --name coach-ai-keyvault \
+  --name coach-keyvault \
   --object-id <app-service-principal-id> \
   --secret-permissions get list
 ```
@@ -514,8 +733,8 @@ Manual deployment:
 cd backend
 zip -r deploy.zip .
 az webapp deploy \
-  --name coach-ai-backend \
-  --resource-group coach-ai-rg \
+  --name coach-backend \
+  --resource-group coach-rg \
   --src-path deploy.zip \
   --type zip
 ```
@@ -531,7 +750,7 @@ Push changes to GitHub for auto-deployment.
 # database/migrations/002_add_new_feature.sql
 
 # Run migration
-psql "host=coach-ai-db.postgres.database.azure.com port=5432 dbname=coach_db user=coachdbadmin password=YourSecurePassword123! sslmode=require" \
+psql "host=coach-db.postgres.database.azure.com port=5432 dbname=coach_db user=coachdbadmin password=YourSecurePassword123! sslmode=require" \
   -f database/migrations/002_add_new_feature.sql
 ```
 
@@ -539,11 +758,11 @@ psql "host=coach-ai-db.postgres.database.azure.com port=5432 dbname=coach_db use
 
 ```bash
 # Export database
-pg_dump "host=coach-ai-db.postgres.database.azure.com port=5432 dbname=coach_db user=coachdbadmin password=YourSecurePassword123! sslmode=require" \
+pg_dump "host=coach-db.postgres.database.azure.com port=5432 dbname=coach_db user=coachdbadmin password=YourSecurePassword123! sslmode=require" \
   > backup_$(date +%Y%m%d).sql
 
 # Restore database
-psql "host=coach-ai-db.postgres.database.azure.com port=5432 dbname=coach_db user=coachdbadmin password=YourSecurePassword123! sslmode=require" \
+psql "host=coach-db.postgres.database.azure.com port=5432 dbname=coach_db user=coachdbadmin password=YourSecurePassword123! sslmode=require" \
   < backup_20250115.sql
 ```
 
@@ -575,29 +794,29 @@ psql "host=coach-ai-db.postgres.database.azure.com port=5432 dbname=coach_db use
 **Backend not starting:**
 ```bash
 # Check logs
-az webapp log tail --name coach-ai-backend --resource-group coach-ai-rg
+az webapp log tail --name coach-backend --resource-group coach-rg
 
 # Restart app
-az webapp restart --name coach-ai-backend --resource-group coach-ai-rg
+az webapp restart --name coach-backend --resource-group coach-rg
 ```
 
 **Database connection failed:**
 ```bash
 # Check firewall rules
 az postgres flexible-server firewall-rule list \
-  --resource-group coach-ai-rg \
-  --name coach-ai-db
+  --resource-group coach-rg \
+  --name coach-db
 
 # Test connection
-psql "host=coach-ai-db.postgres.database.azure.com port=5432 dbname=coach_db user=coachdbadmin password=YourSecurePassword123! sslmode=require" -c "SELECT version();"
+psql "host=coach-db.postgres.database.azure.com port=5432 dbname=coach_db user=coachdbadmin password=YourSecurePassword123! sslmode=require" -c "SELECT version();"
 ```
 
 **CORS errors:**
 ```bash
 # Update CORS settings
 az webapp config appsettings set \
-  --name coach-ai-backend \
-  --resource-group coach-ai-rg \
+  --name coach-backend \
+  --resource-group coach-rg \
   --settings CORS_ORIGINS='["https://your-frontend-url.com"]'
 ```
 
@@ -632,4 +851,4 @@ For deployment issues:
 
 **Deployment complete!** 🎉
 
-Your Coach AI application is now live and ready for users.
+Your Coach application is now live and ready for users.

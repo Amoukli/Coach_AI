@@ -1,5 +1,5 @@
 /**
- * API Client for Coach AI Backend
+ * API Client for Coach Backend
  */
 
 import axios, { AxiosInstance, AxiosError } from 'axios'

@@ -1,6 +1,6 @@
-# Coach AI Documentation
+# Coach Documentation
 
-Welcome to the Coach AI documentation! This directory contains all technical documentation organized by category.
+Welcome to the Coach documentation! This directory contains all technical documentation organized by category.
 
 ## 📁 Documentation Structure
 
@@ -24,9 +24,9 @@ docs/
 
 ## 🚀 Getting Started
 
-New to Coach AI? Start here:
+New to Coach? Start here:
 
-1. **[Quickstart Guide](setup/QUICKSTART.md)** - Get Coach AI running in 5 minutes
+1. **[Quickstart Guide](setup/QUICKSTART.md)** - Get Coach running in 5 minutes
 2. **[Architecture Overview](development/ARCHITECTURE.md)** - Understand the system design
 3. **[Development Guide](development/DEVELOPMENT.md)** - Set up your development environment
 
@@ -150,4 +150,4 @@ If you find errors or outdated information in the documentation:
 
 **Last Updated**: January 2025
 **Documentation Version**: 1.0.0
-**Project**: Coach AI - Clinical Training Platform
+**Project**: Coach - Clinical Training Platform

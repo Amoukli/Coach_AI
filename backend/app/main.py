@@ -41,7 +41,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup"""
-    logger.info("Starting Coach AI backend...")
+    logger.info("Starting Coach backend...")
     logger.info(f"Environment: {settings.ENVIRONMENT}")
 
     # Initialize database
@@ -55,7 +55,7 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown"""
-    logger.info("Shutting down Coach AI backend...")
+    logger.info("Shutting down Coach backend...")
 
 
 # Health check endpoint
@@ -82,7 +82,7 @@ async def api_health_check():
 async def root():
     """Root endpoint"""
     return {
-        "message": "Welcome to Coach AI - Clinical Training Platform",
+        "message": "Welcome to Coach - Clinical Training Platform",
         "version": settings.VERSION,
         "docs": f"{settings.API_V1_STR}/docs",
     }

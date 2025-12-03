@@ -1,6 +1,6 @@
-# Coach AI - Development Progress Documentation
+# Coach - Development Progress Documentation
 
-**Project:** Coach AI - Clinical Training Platform
+**Project:** Coach - Clinical Training Platform
 **Developer:** Claude (Anthropic AI Assistant)
 **Date:** January 2025
 **Last Updated:** November 23, 2025
@@ -10,7 +10,7 @@
 
 ## 📋 Executive Summary
 
-Coach AI is a full-stack web application designed to help undergraduate medical students and newly qualified physicians train on clinical scenarios through interactive patient simulations. The application integrates with the existing Clare (clinical guidelines) and Clark (consultation transcription) ecosystem.
+Coach is a full-stack web application designed to help undergraduate medical students and newly qualified physicians train on clinical scenarios through interactive patient simulations. The application integrates with the existing Clare (clinical guidelines) and Clark (consultation transcription) ecosystem.
 
 **Current Status:** Phase 1 and Phase 2 features complete. Admin UI for scenario management, Clare guidelines integration, Clark consultation import, and Past Cases browser are all implemented and functional.
 
@@ -1052,7 +1052,7 @@ Significantly enhanced the AI patient's realism by implementing a dynamic prompt
 
 ## 🎉 Conclusion
 
-Coach AI is a fully functional MVP ready for initial deployment and user testing. The application provides a solid foundation for clinical training with room for extensive future enhancements.
+Coach is a fully functional MVP ready for initial deployment and user testing. The application provides a solid foundation for clinical training with room for extensive future enhancements.
 
 **Next Immediate Steps:**
 1. Deploy to Azure using the provided CI/CD pipeline

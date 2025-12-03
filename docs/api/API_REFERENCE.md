@@ -1,6 +1,6 @@
-# Coach AI - API Reference
+# Coach - API Reference
 
-Complete API documentation for the Coach AI backend.
+Complete API documentation for the Coach backend.
 
 **Base URL:** `http://localhost:8000/api/v1` (development)
 

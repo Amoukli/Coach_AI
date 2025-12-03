@@ -1,4 +1,4 @@
-# Coach AI Landing Page
+# Coach Landing Page
 
 ## Overview
 

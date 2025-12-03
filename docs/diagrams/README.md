@@ -1,6 +1,6 @@
-# Coach AI Architecture Diagrams
+# Coach Architecture Diagrams
 
-This directory contains Mermaid diagrams documenting the Coach AI Clinical Training Platform architecture.
+This directory contains Mermaid diagrams documenting the Coach Clinical Training Platform architecture.
 
 ## Diagram Index
 

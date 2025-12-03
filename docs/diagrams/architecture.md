@@ -1,14 +1,14 @@
-# Coach AI System Architecture
+# Coach System Architecture
 
 **Last Updated**: 2025-11-24
 
 ## Overview
 
-Coach AI is a clinical training platform for medical students, integrating with the Clare (guidelines) and Clark (transcription) ecosystem.
+Coach is a clinical training platform for medical students, integrating with the Clare (guidelines) and Clark (transcription) ecosystem.
 
 ## UI Design System
 
-Coach AI uses a Clark-inspired design system for visual consistency across the Clare/Clark/Coach ecosystem.
+Coach uses a Clark-inspired design system for visual consistency across the Clare/Clark/Coach ecosystem.
 
 ### Branding
 

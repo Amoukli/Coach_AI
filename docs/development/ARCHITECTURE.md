@@ -1,12 +1,12 @@
-# Coach AI - System Architecture
+# Coach - System Architecture
 
-Detailed architecture documentation for Coach AI.
+Detailed architecture documentation for Coach.
 
 ---
 
 ## 🏛️ System Overview
 
-Coach AI is a cloud-native, microservices-oriented application designed for clinical training through interactive patient simulations.
+Coach is a cloud-native, microservices-oriented application designed for clinical training through interactive patient simulations.
 
 ### High-Level Architecture
 
@@ -367,7 +367,7 @@ App
 
 ```
 ┌─────────────────────────────────────────────┐
-│         Coach AI Application                │
+│         Coach Application                   │
 └───┬──────────┬──────────┬──────────┬───────┘
     │          │          │          │
     │          │          │          │

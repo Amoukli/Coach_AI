@@ -87,7 +87,7 @@ class ClareIntegrationService:
             specialty: Medical specialty (currently unused, Clare handles relevance)
 
         Returns:
-            List of relevant guidelines with metadata formatted for Coach AI
+            List of relevant guidelines with metadata formatted for Coach
         """
         result = await self.search_guidelines(diagnosis)
 
@@ -96,7 +96,7 @@ class ClareIntegrationService:
 
         sources = result.get("sources", [])
 
-        # Format guidelines for Coach AI frontend
+        # Format guidelines for Coach frontend
         # Deduplicate by guideline title (same guideline may appear multiple times for different chapters)
         seen_titles = set()
         guidelines = []
