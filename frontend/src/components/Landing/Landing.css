@@ -269,64 +269,120 @@
 .features-scroll-track {
   display: flex;
   gap: 1.5rem;
-  animation: scrollFeatures 25s linear infinite;
-  will-change: transform;
   align-items: center;
   height: 100%;
   width: calc(12 * (320px + 1.5rem));
 }
 
-.features-scroll-track:hover {
-  animation-play-state: paused;
+/* Static track for reduced motion */
+.features-scroll-track-static {
+  width: auto;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
-@keyframes scrollFeatures {
-  from {
-    transform: translateX(0px);
-  }
-
-  to {
-    transform: translateX(calc(-6 * (320px + 1.5rem)));
-  }
-}
-
-.scrolling-feature {
+/* Feature Card - with 3D tilt and glow effects */
+.feature-card {
   min-width: 320px;
   max-width: 320px;
-  background: transparent;
-  border-radius: 12px;
-  padding: 0.5rem;
-  transition: all 0.3s ease;
-  border: none;
-  flex-shrink: 0;
   height: 160px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 14px;
+  border: 1px solid rgba(102, 153, 0, 0.1);
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  transform-style: preserve-3d;
+  cursor: pointer;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.feature-card:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(102, 153, 0, 0.2);
+}
+
+.feature-card:focus-visible {
+  outline: 2px solid var(--coach-olive);
+  outline-offset: 2px;
+}
+
+/* Static card for reduced motion */
+.feature-card-static {
+  min-width: 320px;
+  max-width: 320px;
+  height: 160px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 14px;
+  border: 1px solid rgba(102, 153, 0, 0.1);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   text-align: center;
 }
 
-.scrolling-feature:hover {
-  transform: translateY(-4px);
+/* Cursor-following glow overlay */
+.feature-card-glow {
+  position: absolute;
+  inset: -1px;
+  border-radius: 15px;
+  background: radial-gradient(
+    400px circle at var(--glow-x, 50%) var(--glow-y, 50%),
+    rgba(102, 153, 0, 0.18),
+    transparent 40%
+  );
+  pointer-events: none;
+  opacity: 0;
+  z-index: 0;
 }
 
-.scrolling-feature h4 {
+/* Icon container */
+.feature-card-icon {
+  width: 40px;
+  height: 40px;
+  color: var(--coach-olive);
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* Title */
+.feature-card-title {
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--text-primary);
-  margin: 0 0 0.25rem 0;
+  margin: 0 0 0.35rem 0;
+  position: relative;
+  z-index: 1;
 }
 
-.scrolling-feature p {
+/* Description */
+.feature-card-description {
   color: var(--text-secondary);
-  line-height: 1.2;
+  line-height: 1.35;
   font-size: 0.875rem;
   font-weight: 400;
   margin: 0;
+  position: relative;
+  z-index: 1;
 }
 
-.scrolling-feature:hover h4 {
-  color: var(--coach-olive-dark);
+/* Add perspective to container for 3D effects */
+.features-scroll-container {
+  perspective: 1000px;
+  perspective-origin: center center;
 }
 
 /* Footer - Clark style horizontal layout */
@@ -412,12 +468,35 @@
   }
 
   .features-scroll-container {
-    height: 140px;
+    height: 160px;
   }
 
-  .scrolling-feature {
+  .feature-card,
+  .feature-card-static {
     min-width: 280px;
     max-width: 280px;
-    height: 140px;
+    height: 150px;
+    padding: 1rem;
+  }
+
+  .feature-card-icon {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 0.5rem;
+  }
+
+  .feature-card-title {
+    font-size: 1rem;
+  }
+
+  .feature-card-description {
+    font-size: 0.8rem;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .feature-card {
+    transition: none !important;
   }
 }

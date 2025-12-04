@@ -2,6 +2,7 @@ import { useState } from 'react'
 import './Landing.css'
 import LoginModal from '../LoginModal'
 import TrialModal from '../TrialModal'
+import { FeatureCarousel } from './components'
 
 const Landing: React.FC = () => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
@@ -63,64 +64,8 @@ const Landing: React.FC = () => {
           </div>
         </div>
 
-        {/* Features Section - inside main like Clark */}
-        <section className="features">
-        <div className="features-content">
-          <div className="features-scroll-container">
-            <div className="features-scroll-track">
-              <div className="scrolling-feature">
-                <h4>Realistic Simulations</h4>
-                <p>Interactive patient scenarios with AI-powered dialogue and realistic responses</p>
-              </div>
-              <div className="scrolling-feature">
-                <h4>Instant Assessment</h4>
-                <p>Real-time feedback on clinical reasoning, communication, and decision-making skills</p>
-              </div>
-              <div className="scrolling-feature">
-                <h4>Targeted Learning</h4>
-                <p>Practice specific specialties and difficulty levels tailored to your learning needs</p>
-              </div>
-              <div className="scrolling-feature">
-                <h4>Voice Integration</h4>
-                <p>Natural voice interactions with AI patients using Azure Speech Services</p>
-              </div>
-              <div className="scrolling-feature">
-                <h4>Progress Tracking</h4>
-                <p>Monitor your improvement across five key clinical competency areas</p>
-              </div>
-              <div className="scrolling-feature">
-                <h4>Clare Integration</h4>
-                <p>Access evidence-based clinical guidelines seamlessly during training scenarios</p>
-              </div>
-              {/* Duplicate set for seamless loop */}
-              <div className="scrolling-feature">
-                <h4>Realistic Simulations</h4>
-                <p>Interactive patient scenarios with AI-powered dialogue and realistic responses</p>
-              </div>
-              <div className="scrolling-feature">
-                <h4>Instant Assessment</h4>
-                <p>Real-time feedback on clinical reasoning, communication, and decision-making skills</p>
-              </div>
-              <div className="scrolling-feature">
-                <h4>Targeted Learning</h4>
-                <p>Practice specific specialties and difficulty levels tailored to your learning needs</p>
-              </div>
-              <div className="scrolling-feature">
-                <h4>Voice Integration</h4>
-                <p>Natural voice interactions with AI patients using Azure Speech Services</p>
-              </div>
-              <div className="scrolling-feature">
-                <h4>Progress Tracking</h4>
-                <p>Monitor your improvement across five key clinical competency areas</p>
-              </div>
-              <div className="scrolling-feature">
-                <h4>Clare Integration</h4>
-                <p>Access evidence-based clinical guidelines seamlessly during training scenarios</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        </section>
+        {/* Features Section - Animated carousel with Framer Motion */}
+        <FeatureCarousel />
       </main>
 
       {/* Footer */}
